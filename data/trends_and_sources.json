@@ -1,0 +1,229 @@
+{
+  "lastResearchedAt": "2026-11-02 18:00 EST",
+  "dailyTarget": "25+ new verified videos & PDF playbooks / day",
+  "trendingTopics": [
+    {
+      "topic": "Shifted Mid-Low Pockets & Stacked SI Sidewall Knots for Quick Release",
+      "momentum": "+138% r/stickdoctor Mentions",
+      "source": "r/stickdoctor & ECD"
+    },
+    {
+      "topic": "Canadian Box Seals, Back-Pick Slip Timing & Sub-Shot-Stick Deception",
+      "momentum": "+124% Coaching Shares",
+      "source": "JM3 Sports & NLL Film"
+    },
+    {
+      "topic": "Aggressive 10-Man Ride Traps & Midline Over-and-Back Pressure",
+      "momentum": "+112% Playbook Downloads",
+      "source": "POWLAX & NCAA Film"
+    },
+    {
+      "topic": "Olympic Sixes Transition Tempo & Two-Way Midfield Spacing",
+      "momentum": "+146% Search Velocity",
+      "source": "Google Trends / World Lacrosse"
+    },
+    {
+      "topic": "Goalie Arc Positioning, Low-to-High Pipe Step & Outlet Passing",
+      "momentum": "+92% Clinic Vouches",
+      "source": "LaxGoalieRat & r/lacrosse"
+    },
+    {
+      "topic": "20-Minute 500-Rep Off-Hand Wall-Ball Progression Sheets (PDF)",
+      "momentum": "+119% Vault Saves",
+      "source": "USA Lacrosse & First Class"
+    }
+  ],
+  "discoveredVideoChannels": [
+    {
+      "channelName": "ECD Lacrosse (East Coast Dyes)",
+      "channelUrl": "https://www.youtube.com/@ECDLacrosse",
+      "category": "Pocket & Mesh Channeling",
+      "curatedVideosCount": 6,
+      "sampleVideo": "Theory of Stringing: How Sidewall Knots Shape Your Pocket Channel"
+    },
+    {
+      "channelName": "POWLAX (Patrick Chapla)",
+      "channelUrl": "https://www.youtube.com/@POWLAX",
+      "category": "Defensive IQ & Slides",
+      "curatedVideosCount": 5,
+      "sampleVideo": "10-Man Ride, Clearing Patterns & Adjacent vs. Coma Slide Packages"
+    },
+    {
+      "channelName": "StringKing Lacrosse",
+      "channelUrl": "https://www.youtube.com/@StringKing",
+      "category": "Sidewall Knots",
+      "curatedVideosCount": 5,
+      "sampleVideo": "uString Pocket Patterns: Mid-Low, Mid, and High Pocket Tutorials"
+    },
+    {
+      "channelName": "JM3 Sports (Jamie Munro)",
+      "channelUrl": "https://www.youtube.com/@JM3Sports",
+      "category": "Box & Two-Man Game",
+      "curatedVideosCount": 4,
+      "sampleVideo": "Canadian Box Lacrosse Deception, Two-Man Pick & Roll Seals"
+    },
+    {
+      "channelName": "First Class Lacrosse (Deemer Class)",
+      "channelUrl": "https://www.youtube.com/@FirstClassLacrosse",
+      "category": "Dodging & Interior Finishing",
+      "curatedVideosCount": 4,
+      "sampleVideo": "Split Dodge Footwork, Hip Drop & Shooting on the Run Mechanics"
+    },
+    {
+      "channelName": "Inside Lacrosse & PLL Film Room",
+      "channelUrl": "https://www.youtube.com/@PremierLacrosseLeague",
+      "category": "Film Study & Clinics",
+      "curatedVideosCount": 4,
+      "sampleVideo": "Pro & NCAA Breakdowns: Off-Ball Cutting, Crease Rolls & Sixes Tempo"
+    }
+  ],
+  "discoveredSources": [
+    {
+      "name": "r/stickdoctor \u2014 Reddit Stick Stringing & Pocket Craft Archive",
+      "url": "https://www.reddit.com/r/StickDoctor/",
+      "category": "Stick Doctoring & Pockets",
+      "signalType": "Sidewall knot diagrams, mesh break-in recipes, traditional leather pita pockets & head pattern tables",
+      "status": "Active Daily Harvester"
+    },
+    {
+      "name": "r/lacrosse \u2014 Coaching Clinics, Wall-Ball Routines & Film Threads",
+      "url": "https://www.reddit.com/r/lacrosse/",
+      "category": "All 4 Pillars (Box, Defense, Stringing, Film)",
+      "signalType": "Peer-vouched coaching drills, goalie hand-speed progressions, and NCAA/PLL game film analysis",
+      "status": "Active Daily Harvester"
+    },
+    {
+      "name": "Inside Lacrosse & FanLax Coaching & D1 Tactics Forums",
+      "url": "https://forum.fanlax.com/",
+      "category": "Film Study & Defensive Systems",
+      "signalType": "Deep schematic threads on zone defenses, invert offense, shot-clock management & 10-man rides",
+      "status": "Active Forum Radar"
+    },
+    {
+      "name": "USA Lacrosse Coaching Education & Printable Drill PDFs",
+      "url": "https://www.usalacrosse.com/coaching-resources",
+      "category": "Playbook PDFs, Wall-Ball & Film Study",
+      "signalType": "Official printable 60-minute practice plans, age-grouped wall-ball cards, and rulebooks",
+      "status": "Active PDF Source"
+    },
+    {
+      "name": "StringKing uString \u2014 Interactive Head & Pocket Pattern Library",
+      "url": "https://ustring.com/",
+      "category": "Stick Doctoring & Pockets",
+      "signalType": "Hole-by-hole sidewall stringing charts for 100+ heads (Mark 2V, Surgeon, Mirage, Eclipse)",
+      "status": "Active Reference Hub"
+    },
+    {
+      "name": "POWLAX Master Coaching Playbook & Whiteboard Archive",
+      "url": "https://powlax.com/",
+      "category": "Defensive IQ, Rides & Playbook PDFs",
+      "signalType": "Printable motion offense PDFs, L-drill templates, clearing ladders, and EMO/man-down rotations",
+      "status": "Active PDF & Video Hub"
+    },
+    {
+      "name": "Internet Archive Lacrosse Rulebooks, History & Coaching Manuals",
+      "url": "https://archive.org/search?query=lacrosse+mediatype%3Atexts",
+      "category": "Printable PDFs & Historical Manuals",
+      "signalType": "Digitized coaching books, Native Haudenosaunee stickmaking monographs, and classic NCAA guides",
+      "status": "Active PDF API"
+    }
+  ],
+  "liveNewsSignals": [
+    {
+      "cluster": "NCAA & College Lacrosse",
+      "title": "Tyler Sandoval and the Rise of NIL Money in Men\u2019s College Lacrosse - RallyFuel",
+      "link": "https://news.google.com/rss/articles/CBMiakFVX3lxTFAzbUowTXBGMVl5WWpRbGp2aXJQb0NadXVwM3h5Y1NINXE0OUtlM3kxSGRHSXprT0t5UUF2Y2otOWpTelhSUEFOdTBsLU5aWi1ISVB3R2JHR2dYVTBNc1VSUlNrQU9aczR1bFE?oc=5",
+      "sourceName": "RallyFuel",
+      "sourceDomain": "https://blog.rallyfuel.com",
+      "pubDate": "Wed, 28 Oct 2026 07:00:00 GMT"
+    },
+    {
+      "cluster": "NCAA & College Lacrosse",
+      "title": "Tufts wins 2026 NCAA DIII men's lacrosse championship - NCAA.com",
+      "link": "https://news.google.com/rss/articles/CBMirwFBVV95cUxNUWk5SmpVYVl4NW9Ja01fdzh1OHlTTF9hQ2UyV0VIX2ZGV0dVdjI4NnlMSnZ1QUdNMWVZRUl6SVVNREZrSE5ieWp4dkJDajY1SjFUUkpLYjh1aUowNS1RbVh5dnczZ3JZc21WbWh5aE0tc29nTG1NUGIwU2xicHdGNXNhUjNZS3NLQTdzV25PUnBHNkFYZmJ1alNFQ0E2WXBTeGIwUHkwVVVvN2hJamkw0gG0AUFVX3lxTE42VUx6bHFBNVFmMF9lSVRkcXJmODhwd2t6aDl6Ty11YU9GQ3NEeUxCUDFvZGpYYXlCUWpKRW92clRINWZJblNRRDY0cUVad1J1NzF6ZF9Oci1GTk1xNDN6S2s1QlVqNmFCeVEyeHhleUkyT2tYZ3pFZ01iNnA0LVFNS2R6VDYtZnV5MXh6U1E4SGpXSlZBS2RfaE5ZNDBvSzMwbXlvRmEtdDF5eDA3alVTclY4RQ?oc=5",
+      "sourceName": "NCAA.com",
+      "sourceDomain": "https://www.ncaa.com",
+      "pubDate": "Sun, 24 May 2026 07:00:00 GMT"
+    },
+    {
+      "cluster": "NCAA & College Lacrosse",
+      "title": "2026-27 College Lacrosse Fall Ball Schedule - USA Lacrosse",
+      "link": "https://news.google.com/rss/articles/CBMihwFBVV95cUxQdC1haGZpYzZwbk1SNVFIYVVNWFIycGJfRC11cEdMNnNvUDZDYUpDXzJLNFJXd3BVeWhKZzIxbmFxTHAzZ1ZEMG9Yak9fZy1KLXQ2eWhocnVzWGZXN1hXcjgzYmpMRVYxU1hjUWN3eGhxenBZeDc4ZlZ1ckRfWjJSSEZucThqYzA?oc=5",
+      "sourceName": "USA Lacrosse",
+      "sourceDomain": "https://www.usalacrosse.com",
+      "pubDate": "Wed, 30 Sep 2026 07:00:00 GMT"
+    },
+    {
+      "cluster": "NCAA & College Lacrosse",
+      "title": "NCAA lacrosse championship winners: All-time list - ESPN",
+      "link": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQdlNHX21XU1lfM1ktbzNXcU12Vl9VdjFFSkZnMWFLNlZNUWt6SndBZ1ZOOEQ0QmZhVUV1UFMzMnh2bGs5cVUzWF9IcUhJYTVla1JFeHd5WWJ4N3dwOVA0RVM0UDVyaGJzQllfNXRrcm8zQThVdWxRVDdUT3A1dWRzdGkweTJIdHBTR2NES0ZCWE9MbTMyOGotLUtQazl2U20w?oc=5",
+      "sourceName": "ESPN",
+      "sourceDomain": "https://www.espn.com",
+      "pubDate": "Mon, 25 May 2026 07:00:00 GMT"
+    },
+    {
+      "cluster": "PLL & Pro Lacrosse",
+      "title": "Global Lacrosse Games roster breakdown: Haudenosaunee men - Premier Lacrosse League",
+      "link": "https://news.google.com/rss/articles/CBMioAFBVV95cUxPM0lSSVVySWRLbnZLeEZNNzdHdTVsTDRNby03bmo1czc4WHVtUllsU256NUc4bXJ2VjgwRE9mS2ViOEh1YWNPaDFtYkRpUmIwRzFfdzlZUFhITGV2X2FGZHpnN3pRZUJBRHBHNDVaTHRfaUtqblVBMUNzbVFYbFhzUVZJSHpuRXVaT3F4VU11dWZYdUFqVk9WT00weWlGV3Ix?oc=5",
+      "sourceName": "Premier Lacrosse League",
+      "sourceDomain": "https://premierlacrosseleague.com",
+      "pubDate": "Thu, 29 Oct 2026 12:18:10 GMT"
+    },
+    {
+      "cluster": "PLL & Pro Lacrosse",
+      "title": "Global Lacrosse Games roster breakdown: Australia men - Premier Lacrosse League",
+      "link": "https://news.google.com/rss/articles/CBMimwFBVV95cUxNTk1NQmNkQ0lBX1dYeWFxVDRqNnROdTdBTEZHeTYyUEJlVWloT1dSZW5jSmtRQmJ2OFFQcWMwRGo3UDdYanl5b0ptZmt5OGxDUGdrWlFIU0gxa0dpbUl2THBsT1VYTlU2cThoUW5TNGExbjR2a3VlNVJacGRKaTVVaUc3MmdLZS1pTE9ISEpTOGl6Mk9ka1ZvTjlxQQ?oc=5",
+      "sourceName": "Premier Lacrosse League",
+      "sourceDomain": "https://premierlacrosseleague.com",
+      "pubDate": "Thu, 29 Oct 2026 12:05:24 GMT"
+    },
+    {
+      "cluster": "PLL & Pro Lacrosse",
+      "title": "Global Lacrosse Games roster breakdown: Canada men - Premier Lacrosse League",
+      "link": "https://news.google.com/rss/articles/CBMilwFBVV95cUxNaU9GS1o3UWtPeWJRSjBpUWhGTmlQeExFYVBQazFLalUzR3E5R0trN2pvSW1qWlpmRkZtbXRXbmVFeENZN2I0R1p6RjlOVy1pTU42SU41bGt0ZTAtN0ZOdlNIbE9PdEFiV0ZrU1ZXc1dWV25wQUtmSnZkSUtBUEU4SWJ0YWNDaGNOWHljUzBWNlFtSnBxSmNR?oc=5",
+      "sourceName": "Premier Lacrosse League",
+      "sourceDomain": "https://premierlacrosseleague.com",
+      "pubDate": "Fri, 30 Oct 2026 11:54:53 GMT"
+    },
+    {
+      "cluster": "PLL & Pro Lacrosse",
+      "title": "Global Lacrosse Games roster breakdown: USA men - Premier Lacrosse League",
+      "link": "https://news.google.com/rss/articles/CBMikwFBVV95cUxPVmV2YTQwa2gzV01WZVpBYkc2UHdsVGZFcUNndHdkZWtKLTdNSHZvRFdUVGRjZXNTanFjWnVRakVaQWx2WE92LU9kSVozekhYSWt3WlRUNlMzMkJzRDRwZWZQVkFHVkJnU0l2REVuWl9hR0tzbXg3V1JmVFYzRlhDcDE4LXhrVU91NXJhSE9oUzZLRjA?oc=5",
+      "sourceName": "Premier Lacrosse League",
+      "sourceDomain": "https://premierlacrosseleague.com",
+      "pubDate": "Fri, 30 Oct 2026 12:18:19 GMT"
+    },
+    {
+      "cluster": "Box Lacrosse & NLL",
+      "title": "National Lacrosse League and TSN Extend Partnership and Announce 2026-27 Broadcast Schedule - National Lacrosse League",
+      "link": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxPLVJhYnQtLUgwa2RGM2hHSlE1SU9OQkItMWZIRXlJV2RmTmdxVDJNM0ZKTHZQZUZVN2k3cE45aTlKQkFSN3RhQWc0dGJjTGgxZ21zXzIzdWZ2Mkx2amtJMnhLSmIzaHdFS1BwTHRkVlNCZENnNVlzdU5tUFdXYVIzbmpoemIyaDV5dUdCYS1PVUFNZ1ZzZkREdHpfWmVpeXNydUZYUHlacHZZSmF4ZjQxM3FQM2dfM2E0?oc=5",
+      "sourceName": "National Lacrosse League",
+      "sourceDomain": "https://www.nll.com",
+      "pubDate": "Thu, 29 Oct 2026 16:08:16 GMT"
+    },
+    {
+      "cluster": "Box Lacrosse & NLL",
+      "title": "FloSports, National Lacrosse League Begin Exclusive Multiyear Global Streaming Partnership - Sports Video Group",
+      "link": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxPOWlEVGRrd2VBQ3YxZmZIYXU1LUhPamh5c2RQdHZ6b3JFemp1bzZURjRXaU9EUjNFUmJnaXFFbTRmalZvUWpPTUZIdEs2VDZZWXZJZXItRVZMU09FZGVNN0VFZmJiR2dKTXg2Rm02bnlZRjNnZENqVjdBeFdTRG5mQWNmVnRXVlEtOWtNeE40amZIQk9lQVFJa1RISUtUSW1aVm5hWDJ6V0dZRFJKTTNtbGVqZzFqeUZzS2YweGwwUUV4VTk4M1BHbg?oc=5",
+      "sourceName": "Sports Video Group",
+      "sourceDomain": "https://www.sportsvideo.org",
+      "pubDate": "Tue, 20 Oct 2026 07:00:00 GMT"
+    },
+    {
+      "cluster": "Box Lacrosse & NLL",
+      "title": "FloSports and National Lacrosse League Announce Exclusive Multiyear Global Streaming Partnership Bringing Largest Professional Box Lacrosse League to Fans Everywhere - FloSports",
+      "link": "https://news.google.com/rss/articles/CBMipgJBVV95cUxNdkVnZGVhSENpenRBaUppb3dpR2Z1M3FpaVp2aGJ6Z3RYeGlKcjNQS3VhaUtDRkdDcTVwQl9xdE5HMGNkdzB3cjZLMlBTdFhHZzlSODl4Z09ZZktwbTAwNS1VVjYxM1lBdlNYNFJDbkgxZkVBeG9kU3JpTk1vMldSSXhCdXZXcjJyaGZjaHBMR25YM0RkQkxaeFluY29RNVdOVWFXWWJ6bUlWTWQ5c3RFb1JNSWdKLWlXMXNITTRFN1M3d3RrenlCMTJORlZrd3A4R19VVjJvMlFnXzJqVDFCbDg5WVFzeWRJam1rTDFzM1pMTXlZUFlGbEdZVWdEQWY3UEg1OWZJZmp4aGVydDVTRzlFT0t6MFVRbjRrLUZJRndqUUFpOFE?oc=5",
+      "sourceName": "FloSports",
+      "sourceDomain": "https://www.flosports.tv",
+      "pubDate": "Thu, 15 Oct 2026 07:00:00 GMT"
+    },
+    {
+      "cluster": "Box Lacrosse & NLL",
+      "title": "FloSports adds NLL\u2019s global streaming rights, creates dedicated FloLacrosse channel - Sports Business Journal",
+      "link": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxNQjVSR1NqVEFhbk1aQWJXS2xMRTFtSTlOeDUxMmtGeXVISC1GMlhxSTZjTU8waDhDc0VqMTBtb3lnY3Q1SFRSVGRiNkhfeG5tSU5IVy0yV1Y1c295NjZxUjJIcG5wVGJ0S210bDJTZ3ZzV3p1YXhIQWc2a29Zb2R1UGN5YnduUE13TV9Rb2x6dEpYaVc4VVkxU3BxbDN3ZzcwaG83VmRhRUI2aENVR2Fpa29TbUVpQVV2TWxZT1BETHFKb1NaMk5kdjFjM2ZyNUh5ODhjbC1Pdw?oc=5",
+      "sourceName": "Sports Business Journal",
+      "sourceDomain": "https://www.sportsbusinessjournal.com",
+      "pubDate": "Thu, 15 Oct 2026 07:00:00 GMT"
+    }
+  ]
+}

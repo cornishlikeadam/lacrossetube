@@ -1,0 +1,332 @@
+[
+  {
+    "id": "blog-2026-11-02",
+    "date": "November 02, 2026",
+    "timestamp": "2026-11-02 18:00 EST",
+    "title": "Daily 6PM Dispatch: Top 10 of 34 Lacrosse Mastery Videos & Playbook PDFs (November 02, 2026)",
+    "summary": "Today's 25+/day automated 6:00 PM harvest verified 34 total videos (with 50% midpoint frames) and printable coaching PDFs across r/lacrosse, r/stickdoctor, POWLAX, ECD, StringKing, JM3, and Internet Archive.",
+    "markdownPath": "blog/2026-11-02-top-10-dispatch.md",
+    "top10": [
+      {
+        "id": "yt-QhNACCmrZzo",
+        "type": "video",
+        "youtubeId": "QhNACCmrZzo",
+        "category": "pockets",
+        "categoryLabel": "Stick Doctoring & Pockets",
+        "subTag": "Pocket & Mesh Channeling",
+        "duration": "50% Still Verified",
+        "midpointStill": "https://i.ytimg.com/vi/QhNACCmrZzo/hq2.jpg",
+        "fallbackStill": "https://i.ytimg.com/vi/QhNACCmrZzo/hqdefault.jpg",
+        "title": "Tutorial: 9 Diamond Top String",
+        "author": "ECD Lacrosse",
+        "authorAvatar": "\ud83e\udd4d",
+        "vouchCount": 96,
+        "sourceHub": "r/stickdoctor & ECD Lacrosse",
+        "vouchQuote": "Step-by-step mesh channeling, topstring locking, and sidewall knot tensioning from East Coast Dyes.",
+        "url": "https://www.youtube.com/watch?v=QhNACCmrZzo",
+        "addedAt": "2026-11-02 18:00"
+      },
+      {
+        "id": "pdf-usalax-wallball-500",
+        "type": "playbook",
+        "category": "playbooks",
+        "categoryLabel": "Playbook PDFs, Wall-Ball & Film Study",
+        "subTag": "Wall-Ball Routines",
+        "duration": "PDF \u00b7 2-Page Drill Card",
+        "formatBadge": "Printable Wall-Ball Sheet",
+        "midpointStill": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=720&q=80",
+        "fallbackStill": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=720&q=80",
+        "title": "The 20-Minute 500-Rep Lacrosse Wall-Ball Master Checklist (Left & Right Hand)",
+        "author": "USA Lacrosse & r/lacrosse Commons",
+        "authorAvatar": "\ud83d\udcd1",
+        "vouchCount": 96,
+        "sourceHub": "USA Lacrosse & r/lacrosse",
+        "vouchQuote": "Print this 1-page laminated card and tape it to your gear bag: 50 quick-sticks, 50 one-hand snaps, 50 Canadian cross-face, 50 split-to-throw.",
+        "pdfUrl": "https://www.usalacrosse.com/sites/default/files/documents/Coaching/wall-ball-drills.pdf",
+        "url": "https://www.usalacrosse.com/coaching-resources",
+        "addedAt": "2026-11-02 18:00"
+      },
+      {
+        "id": "yt-49VpeW5dm3E",
+        "type": "video",
+        "youtubeId": "49VpeW5dm3E",
+        "category": "pockets",
+        "categoryLabel": "Stick Doctoring & Pockets",
+        "subTag": "Pocket & Mesh Channeling",
+        "duration": "50% Still Verified",
+        "midpointStill": "https://i.ytimg.com/vi/49VpeW5dm3E/hq2.jpg",
+        "fallbackStill": "https://i.ytimg.com/vi/49VpeW5dm3E/hqdefault.jpg",
+        "title": "Tutorial: How to String a Knot",
+        "author": "ECD Lacrosse",
+        "authorAvatar": "\ud83e\udd4d",
+        "vouchCount": 94,
+        "sourceHub": "r/stickdoctor & ECD Lacrosse",
+        "vouchQuote": "Step-by-step mesh channeling, topstring locking, and sidewall knot tensioning from East Coast Dyes.",
+        "url": "https://www.youtube.com/watch?v=49VpeW5dm3E",
+        "addedAt": "2026-11-02 18:00"
+      },
+      {
+        "id": "yt-kewPNTbiul0",
+        "type": "video",
+        "youtubeId": "kewPNTbiul0",
+        "category": "pockets",
+        "categoryLabel": "Stick Doctoring & Pockets",
+        "subTag": "Sidewall Knots",
+        "duration": "50% Still Verified",
+        "midpointStill": "https://i.ytimg.com/vi/kewPNTbiul0/hq2.jpg",
+        "fallbackStill": "https://i.ytimg.com/vi/kewPNTbiul0/hqdefault.jpg",
+        "title": "Stringing Perfect vs Many Sticks | Lacrosse | POWLAX",
+        "author": "POWLAX l Patrick Chapla",
+        "authorAvatar": "\ud83e\udd4d",
+        "vouchCount": 92,
+        "sourceHub": "r/stickdoctor & StringKing",
+        "vouchQuote": "Close-up knot guide covering Interlocks, Anchor Knots, and KSI for consistent pocket depth.",
+        "url": "https://www.youtube.com/watch?v=kewPNTbiul0",
+        "addedAt": "2026-11-02 18:00"
+      },
+      {
+        "id": "yt-BMfwAq2yc84",
+        "type": "video",
+        "youtubeId": "BMfwAq2yc84",
+        "category": "pockets",
+        "categoryLabel": "Stick Doctoring & Pockets",
+        "subTag": "Sidewall Knots",
+        "duration": "50% Still Verified",
+        "midpointStill": "https://i.ytimg.com/vi/BMfwAq2yc84/hq2.jpg",
+        "fallbackStill": "https://i.ytimg.com/vi/BMfwAq2yc84/hqdefault.jpg",
+        "title": "finishing off the stringking mark 3v \ud83e\udea2 #shorts #lacrosse",
+        "author": "Lacrosse Unlimited",
+        "authorAvatar": "\ud83e\udd4d",
+        "vouchCount": 90,
+        "sourceHub": "r/stickdoctor & StringKing",
+        "vouchQuote": "Close-up knot guide covering Interlocks, Anchor Knots, and KSI for consistent pocket depth.",
+        "url": "https://www.youtube.com/watch?v=BMfwAq2yc84",
+        "addedAt": "2026-11-02 18:00"
+      },
+      {
+        "id": "pdf-powlax-10man-ride-clear",
+        "type": "playbook",
+        "category": "playbooks",
+        "categoryLabel": "Playbook PDFs, Wall-Ball & Film Study",
+        "subTag": "Printable Playbook PDF",
+        "duration": "PDF \u00b7 18-Page Playbook",
+        "formatBadge": "Coaching Playbook PDF",
+        "midpointStill": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=720&q=80",
+        "fallbackStill": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=720&q=80",
+        "title": "Complete 10-Man Ride, 4-3-3 Clearing Ladder & Adjacent/Coma Slide Package Manual",
+        "author": "POWLAX Coaching Commons",
+        "authorAvatar": "\ud83d\udcd8",
+        "vouchCount": 89,
+        "sourceHub": "POWLAX & High School Coaches",
+        "vouchQuote": "Every diagram a defensive coordinator needs on the clipboard: field zones, midline trap triggers, and second-slide X rotation rules.",
+        "pdfUrl": "https://powlax.com/",
+        "url": "https://powlax.com/",
+        "addedAt": "2026-11-02 18:00"
+      },
+      {
+        "id": "yt-nhqQRjMHvlQ",
+        "type": "video",
+        "youtubeId": "nhqQRjMHvlQ",
+        "category": "defense",
+        "categoryLabel": "Defensive IQ, Footwork & Rides",
+        "subTag": "Defensive IQ & Slides",
+        "duration": "50% Still Verified",
+        "midpointStill": "https://i.ytimg.com/vi/nhqQRjMHvlQ/hq2.jpg",
+        "fallbackStill": "https://i.ytimg.com/vi/nhqQRjMHvlQ/hqdefault.jpg",
+        "title": "5 On a Die - Slide and Recover Drill | Lacrosse | POWLAX",
+        "author": "POWLAX l Patrick Chapla",
+        "authorAvatar": "\ud83d\udee1\ufe0f",
+        "vouchCount": 88,
+        "sourceHub": "POWLAX Coaching Archive",
+        "vouchQuote": "Visual whiteboard and film study on approach angles, hip positioning, and adjacent vs. coma slide rotations.",
+        "url": "https://www.youtube.com/watch?v=nhqQRjMHvlQ",
+        "addedAt": "2026-11-02 18:00"
+      },
+      {
+        "id": "pdf-stickdoctor-knot-bible",
+        "type": "playbook",
+        "category": "playbooks",
+        "categoryLabel": "Playbook PDFs, Wall-Ball & Film Study",
+        "subTag": "Printable Playbook PDF",
+        "duration": "PDF \u00b7 12-Page Pocket Guide",
+        "formatBadge": "Sideline Stringing Card",
+        "midpointStill": "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=720&q=80",
+        "fallbackStill": "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=720&q=80",
+        "title": "The Sideline Stick Doctor's Pocket & Knot Reference Sheet (9D Topstring, SI, KSI, Chenango)",
+        "author": "r/stickdoctor & uString Archive",
+        "authorAvatar": "\ud83e\udd4d",
+        "vouchCount": 87,
+        "sourceHub": "r/stickdoctor & StringKing uString",
+        "vouchQuote": "Keep a printed copy in your team's emergency repair kit: exact sidewall hole counts for low/mid/high pockets plus NCAA 4-inch legal pocket checks.",
+        "pdfUrl": "https://ustring.com/",
+        "url": "https://ustring.com/",
+        "addedAt": "2026-11-02 18:00"
+      },
+      {
+        "id": "yt-bjIKPeCmhwc",
+        "type": "video",
+        "youtubeId": "bjIKPeCmhwc",
+        "category": "defense",
+        "categoryLabel": "Defensive IQ, Footwork & Rides",
+        "subTag": "Rides & Clears",
+        "duration": "50% Still Verified",
+        "midpointStill": "https://i.ytimg.com/vi/bjIKPeCmhwc/hq2.jpg",
+        "fallbackStill": "https://i.ytimg.com/vi/bjIKPeCmhwc/hqdefault.jpg",
+        "title": "Implementing a 10 Man Ride | Lacrosse | POWLAX",
+        "author": "POWLAX l Patrick Chapla",
+        "authorAvatar": "\ud83d\udee1\ufe0f",
+        "vouchCount": 86,
+        "sourceHub": "POWLAX Coaching Archive",
+        "vouchQuote": "Complete 10-man ride & 4-3-3 clearing blueprint for pressuring transitions and creating easy unsettled goals.",
+        "url": "https://www.youtube.com/watch?v=bjIKPeCmhwc",
+        "addedAt": "2026-11-02 18:00"
+      },
+      {
+        "id": "yt-h9zGXWpuPdI",
+        "type": "video",
+        "youtubeId": "h9zGXWpuPdI",
+        "category": "box",
+        "categoryLabel": "Box Mechanics & Two-Man Game",
+        "subTag": "Box & Two-Man Game",
+        "duration": "50% Still Verified",
+        "midpointStill": "https://i.ytimg.com/vi/h9zGXWpuPdI/hq2.jpg",
+        "fallbackStill": "https://i.ytimg.com/vi/h9zGXWpuPdI/hqdefault.jpg",
+        "title": "2 Man Game in Box Lacrosse with Philadelphia Wings GM/Head Coach Paul Day",
+        "author": "JM3 Sports | Lacrosse",
+        "authorAvatar": "\u26a1",
+        "vouchCount": 84,
+        "sourceHub": "JM3 Sports & r/lacrosse",
+        "vouchQuote": "Canadian two-man game seals, pick-and-roll reads, and tight-space stick protection inside the dotted line.",
+        "url": "https://www.youtube.com/watch?v=h9zGXWpuPdI",
+        "addedAt": "2026-11-02 18:00"
+      }
+    ],
+    "trendingTopics": [
+      {
+        "topic": "Shifted Mid-Low Pockets & Stacked SI Sidewall Knots for Quick Release",
+        "momentum": "+138% r/stickdoctor Mentions",
+        "source": "r/stickdoctor & ECD"
+      },
+      {
+        "topic": "Canadian Box Seals, Back-Pick Slip Timing & Sub-Shot-Stick Deception",
+        "momentum": "+124% Coaching Shares",
+        "source": "JM3 Sports & NLL Film"
+      },
+      {
+        "topic": "Aggressive 10-Man Ride Traps & Midline Over-and-Back Pressure",
+        "momentum": "+112% Playbook Downloads",
+        "source": "POWLAX & NCAA Film"
+      },
+      {
+        "topic": "Olympic Sixes Transition Tempo & Two-Way Midfield Spacing",
+        "momentum": "+146% Search Velocity",
+        "source": "Google Trends / World Lacrosse"
+      },
+      {
+        "topic": "Goalie Arc Positioning, Low-to-High Pipe Step & Outlet Passing",
+        "momentum": "+92% Clinic Vouches",
+        "source": "LaxGoalieRat & r/lacrosse"
+      },
+      {
+        "topic": "20-Minute 500-Rep Off-Hand Wall-Ball Progression Sheets (PDF)",
+        "momentum": "+119% Vault Saves",
+        "source": "USA Lacrosse & First Class"
+      }
+    ],
+    "discoveredSources": [
+      {
+        "name": "r/stickdoctor \u2014 Reddit Stick Stringing & Pocket Craft Archive",
+        "url": "https://www.reddit.com/r/StickDoctor/",
+        "category": "Stick Doctoring & Pockets",
+        "signalType": "Sidewall knot diagrams, mesh break-in recipes, traditional leather pita pockets & head pattern tables",
+        "status": "Active Daily Harvester"
+      },
+      {
+        "name": "r/lacrosse \u2014 Coaching Clinics, Wall-Ball Routines & Film Threads",
+        "url": "https://www.reddit.com/r/lacrosse/",
+        "category": "All 4 Pillars (Box, Defense, Stringing, Film)",
+        "signalType": "Peer-vouched coaching drills, goalie hand-speed progressions, and NCAA/PLL game film analysis",
+        "status": "Active Daily Harvester"
+      },
+      {
+        "name": "Inside Lacrosse & FanLax Coaching & D1 Tactics Forums",
+        "url": "https://forum.fanlax.com/",
+        "category": "Film Study & Defensive Systems",
+        "signalType": "Deep schematic threads on zone defenses, invert offense, shot-clock management & 10-man rides",
+        "status": "Active Forum Radar"
+      },
+      {
+        "name": "USA Lacrosse Coaching Education & Printable Drill PDFs",
+        "url": "https://www.usalacrosse.com/coaching-resources",
+        "category": "Playbook PDFs, Wall-Ball & Film Study",
+        "signalType": "Official printable 60-minute practice plans, age-grouped wall-ball cards, and rulebooks",
+        "status": "Active PDF Source"
+      },
+      {
+        "name": "StringKing uString \u2014 Interactive Head & Pocket Pattern Library",
+        "url": "https://ustring.com/",
+        "category": "Stick Doctoring & Pockets",
+        "signalType": "Hole-by-hole sidewall stringing charts for 100+ heads (Mark 2V, Surgeon, Mirage, Eclipse)",
+        "status": "Active Reference Hub"
+      },
+      {
+        "name": "POWLAX Master Coaching Playbook & Whiteboard Archive",
+        "url": "https://powlax.com/",
+        "category": "Defensive IQ, Rides & Playbook PDFs",
+        "signalType": "Printable motion offense PDFs, L-drill templates, clearing ladders, and EMO/man-down rotations",
+        "status": "Active PDF & Video Hub"
+      },
+      {
+        "name": "Internet Archive Lacrosse Rulebooks, History & Coaching Manuals",
+        "url": "https://archive.org/search?query=lacrosse+mediatype%3Atexts",
+        "category": "Printable PDFs & Historical Manuals",
+        "signalType": "Digitized coaching books, Native Haudenosaunee stickmaking monographs, and classic NCAA guides",
+        "status": "Active PDF API"
+      }
+    ],
+    "discoveredVideoChannels": [
+      {
+        "channelName": "ECD Lacrosse (East Coast Dyes)",
+        "channelUrl": "https://www.youtube.com/@ECDLacrosse",
+        "category": "Pocket & Mesh Channeling",
+        "curatedVideosCount": 6,
+        "sampleVideo": "Theory of Stringing: How Sidewall Knots Shape Your Pocket Channel"
+      },
+      {
+        "channelName": "POWLAX (Patrick Chapla)",
+        "channelUrl": "https://www.youtube.com/@POWLAX",
+        "category": "Defensive IQ & Slides",
+        "curatedVideosCount": 5,
+        "sampleVideo": "10-Man Ride, Clearing Patterns & Adjacent vs. Coma Slide Packages"
+      },
+      {
+        "channelName": "StringKing Lacrosse",
+        "channelUrl": "https://www.youtube.com/@StringKing",
+        "category": "Sidewall Knots",
+        "curatedVideosCount": 5,
+        "sampleVideo": "uString Pocket Patterns: Mid-Low, Mid, and High Pocket Tutorials"
+      },
+      {
+        "channelName": "JM3 Sports (Jamie Munro)",
+        "channelUrl": "https://www.youtube.com/@JM3Sports",
+        "category": "Box & Two-Man Game",
+        "curatedVideosCount": 4,
+        "sampleVideo": "Canadian Box Lacrosse Deception, Two-Man Pick & Roll Seals"
+      },
+      {
+        "channelName": "First Class Lacrosse (Deemer Class)",
+        "channelUrl": "https://www.youtube.com/@FirstClassLacrosse",
+        "category": "Dodging & Interior Finishing",
+        "curatedVideosCount": 4,
+        "sampleVideo": "Split Dodge Footwork, Hip Drop & Shooting on the Run Mechanics"
+      },
+      {
+        "channelName": "Inside Lacrosse & PLL Film Room",
+        "channelUrl": "https://www.youtube.com/@PremierLacrosseLeague",
+        "category": "Film Study & Clinics",
+        "curatedVideosCount": 4,
+        "sampleVideo": "Pro & NCAA Breakdowns: Off-Ball Cutting, Crease Rolls & Sixes Tempo"
+      }
+    ]
+  }
+]

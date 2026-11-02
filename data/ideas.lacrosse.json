@@ -1,0 +1,729 @@
+{
+  "version": 3,
+  "generated": "2026-11-02",
+  "description": "Lacrosse-only idea library for the LacrosseTube field room. Sport -> position -> ideas.",
+  "schema": {
+    "required": [
+      "id",
+      "title",
+      "directive",
+      "why",
+      "tags",
+      "viz",
+      "template",
+      "bucket"
+    ],
+    "optional": [
+      "change",
+      "keys",
+      "game",
+      "origin",
+      "kid"
+    ],
+    "templates": [
+      "help",
+      "talk",
+      "loose",
+      "danger",
+      "slide",
+      "pick",
+      "angle",
+      "double",
+      "disguise",
+      "hold",
+      "hustle"
+    ],
+    "gameTypes": {
+      "concept": "the template mini-game; optional ask",
+      "choose": "ask + 2 options + correct + right + wrong",
+      "time": "ask + cue + right + wrong"
+    }
+  },
+  "sports": {
+    "lacrosse": {
+      "defense": [
+        {
+          "id": "lax-d-wall",
+          "title": "Build the wall",
+          "directive": "Ball far away? Step in. Be the wall.",
+          "why": "From the help spot you can reach the dodge and still get back before the skip pass lands.",
+          "tags": [
+            "help",
+            "backside"
+          ],
+          "viz": "Backside defender steps off his man toward the crease, then recovers on the skip.",
+          "template": "help",
+          "bucket": "start",
+          "change": [
+            "On your man",
+            "In the help spot"
+          ],
+          "keys": [
+            "backside",
+            "get in",
+            "no man's land",
+            "the wall",
+            "too far out"
+          ]
+        },
+        {
+          "id": "lax-d-talk",
+          "title": "Talk every exchange",
+          "directive": "Call ball, call help. Every play.",
+          "why": "Six silent defenders can chase the same attacker and leave another one wide open.",
+          "tags": [
+            "talk",
+            "match up"
+          ],
+          "viz": "Two defenders run to one attacker; one attacker stands open until the calls fix it.",
+          "template": "talk",
+          "bucket": "start",
+          "keys": [
+            "talk",
+            "who's got who",
+            "conversation",
+            "let us know"
+          ],
+          "game": {
+            "type": "concept",
+            "ask": "Nobody talked. Tap the OPEN attacker."
+          }
+        },
+        {
+          "id": "lax-d-slide",
+          "title": "Slide on time",
+          "directive": "Teammate beat? Open the hips and go.",
+          "why": "Every tenth of a second you wait moves the meeting point closer to the cage.",
+          "tags": [
+            "slide",
+            "rotation"
+          ],
+          "viz": "Adjacent defender slides early and meets the dodger outside 8 yards.",
+          "template": "slide",
+          "bucket": "start",
+          "change": [
+            "Wait. Shot.",
+            "Go. Stop."
+          ],
+          "keys": [
+            "slide",
+            "beat",
+            "open up our hips",
+            "go sooner",
+            "just go"
+          ]
+        },
+        {
+          "id": "lax-d-topside",
+          "title": "Take away the topside",
+          "directive": "Come out under control. Stand on his road.",
+          "why": "You only take away the cage when you stand on the line from him to the goal.",
+          "tags": [
+            "on ball",
+            "approach"
+          ],
+          "viz": "Defender breaks down on the line between the dodger and the cage.",
+          "template": "angle",
+          "bucket": "start",
+          "keys": [
+            "topside",
+            "top side",
+            "approach",
+            "under control",
+            "break down"
+          ],
+          "game": {
+            "type": "concept",
+            "ask": "Tap where you take away his road to the cage."
+          }
+        },
+        {
+          "id": "lax-d-contact",
+          "title": "No switch without contact",
+          "directive": "No bump? Yell 'over' and stay with him.",
+          "why": "With no contact your path is still open. A switch makes two of you change jobs at once.",
+          "tags": [
+            "pick",
+            "switch"
+          ],
+          "viz": "Defender fights over the pick and stays with the ball carrier.",
+          "template": "pick",
+          "bucket": "stop",
+          "keys": [
+            "switch",
+            "contact",
+            "over, over"
+          ]
+        },
+        {
+          "id": "lax-d-skip",
+          "title": "Recover on the skip",
+          "directive": "Skip pass in the air? Recover to your man.",
+          "why": "The ball is in the air long enough to close out if you go right away.",
+          "tags": [
+            "help",
+            "recover",
+            "skip"
+          ],
+          "viz": "Help defender sprints back to his man while the skip pass travels.",
+          "template": "help",
+          "bucket": "start",
+          "change": [
+            "Ball watching",
+            "Back in time"
+          ],
+          "keys": [
+            "skip",
+            "recover",
+            "reco"
+          ],
+          "game": {
+            "type": "time",
+            "ask": "Tap the moment the skip pass leaves his stick.",
+            "cue": "SKIP!",
+            "right": "You got back before the catch.",
+            "wrong": "Late. He caught it and shot."
+          },
+          "origin": "audit-new"
+        },
+        {
+          "id": "lax-d-ground",
+          "title": "Hunt every ground ball",
+          "directive": "Ball on the ground? Get there first.",
+          "why": "Every ground ball we lose gives them another try to score.",
+          "tags": [
+            "ground ball"
+          ],
+          "viz": "Chain of shrinking squares: each lost ground ball is one more try for them.",
+          "template": "loose",
+          "bucket": "start",
+          "keys": [
+            "ground ball",
+            "way of life",
+            "put the ball on the ground"
+          ]
+        }
+      ],
+      "lsm": [
+        {
+          "id": "lax-lsm-ground",
+          "title": "Win the ground ball",
+          "directive": "Ball on the ground? Low hands, run through it.",
+          "why": "Running through the ball with low hands wins it before the second player arrives.",
+          "tags": [
+            "ground ball"
+          ],
+          "viz": "LSM runs through the ball with his stick low.",
+          "template": "loose",
+          "bucket": "start",
+          "keys": [
+            "ground ball",
+            "gb",
+            "scoop"
+          ]
+        },
+        {
+          "id": "lax-lsm-wing",
+          "title": "Win the wing",
+          "directive": "Faceoff? Go on the whistle, not the ball.",
+          "why": "Moving on the whistle gives you a full stride head start.",
+          "tags": [
+            "faceoff",
+            "wing"
+          ],
+          "viz": "Wing player breaks on the whistle and beats the other wing.",
+          "template": "loose",
+          "bucket": "start",
+          "change": [
+            "Watch the ball",
+            "Go on the whistle"
+          ],
+          "keys": [
+            "wing",
+            "faceoff",
+            "whistle"
+          ],
+          "game": {
+            "type": "time",
+            "ask": "Wing play. Tap the moment the whistle blows.",
+            "cue": "WHISTLE!",
+            "right": "You beat their wing to it.",
+            "wrong": "Too slow. Their wing got there first."
+          }
+        },
+        {
+          "id": "lax-lsm-trap",
+          "title": "Trap on the sideline",
+          "directive": "Ball near the sideline? Close the open side.",
+          "why": "The sideline takes half his escape, and your stick takes most of the rest.",
+          "tags": [
+            "double",
+            "trap"
+          ],
+          "viz": "Ball carrier pinned on the sideline by two defenders.",
+          "template": "double",
+          "bucket": "start",
+          "keys": [
+            "double",
+            "trap",
+            "sideline"
+          ]
+        },
+        {
+          "id": "lax-lsm-hot",
+          "title": "Be the hot slide",
+          "directive": "You are hot? Go the moment he is beat.",
+          "why": "The first slide decides the whole rotation.",
+          "tags": [
+            "slide",
+            "hot"
+          ],
+          "viz": "LSM slides from adjacent the moment the dodger turns the corner.",
+          "template": "slide",
+          "bucket": "start",
+          "keys": [
+            "hot",
+            "slide",
+            "first slide"
+          ]
+        },
+        {
+          "id": "lax-lsm-break",
+          "title": "Hold in transition",
+          "directive": "Outnumbered on the break? Hold. Wait for help.",
+          "why": "Jumping the ball early lets them pass around you. Holding buys time for help.",
+          "tags": [
+            "transition",
+            "numbers"
+          ],
+          "viz": "Three defenders hold a triangle until the trailer arrives.",
+          "template": "hold",
+          "bucket": "start",
+          "keys": [
+            "numbers",
+            "transition",
+            "4-on-3",
+            "fast break"
+          ]
+        },
+        {
+          "id": "lax-lsm-outlet",
+          "title": "Find the outlet",
+          "directive": "Won the ball? Find the open man fast.",
+          "why": "Right after a turnover one teammate is always open before the ride sets up.",
+          "tags": [
+            "clear",
+            "outlet"
+          ],
+          "viz": "After the ground ball, one teammate stands open for the outlet.",
+          "template": "talk",
+          "bucket": "start",
+          "change": [
+            "Run into the ride",
+            "Hit the open man"
+          ],
+          "keys": [
+            "clear",
+            "outlet",
+            "break"
+          ],
+          "game": {
+            "type": "concept",
+            "ask": "You won it. Tap the OPEN teammate."
+          }
+        }
+      ],
+      "midfield": [
+        {
+          "id": "lax-m-whistle",
+          "title": "Play to the whistle",
+          "directive": "Ball loose? Keep running until the whistle.",
+          "why": "A loose ball goes to whoever is still running when it stops rolling.",
+          "tags": [
+            "effort"
+          ],
+          "viz": "One middie stops early; the one who keeps running wins the ball.",
+          "template": "hustle",
+          "bucket": "start",
+          "keys": [
+            "effort",
+            "hustle",
+            "whistle",
+            "hustling"
+          ]
+        },
+        {
+          "id": "lax-m-ground",
+          "title": "Hunt ground balls",
+          "directive": "Ball on the ground? Get there first.",
+          "why": "Every ground ball we win ends one of their tries to score.",
+          "tags": [
+            "ground ball"
+          ],
+          "viz": "Shrinking squares show tries ending when we win the ball.",
+          "template": "loose",
+          "bucket": "start",
+          "keys": [
+            "ground ball",
+            "gb"
+          ]
+        },
+        {
+          "id": "lax-m-hide",
+          "title": "Hide the short stick",
+          "directive": "Scramble? Swap so we all look the same.",
+          "why": "If they cannot find the short stick, they can only guess: 1 in 6.",
+          "tags": [
+            "short stick",
+            "scramble"
+          ],
+          "viz": "Defenders shuffle so the short stick hides among the poles.",
+          "template": "disguise",
+          "bucket": "start",
+          "keys": [
+            "short stick",
+            "can't tell",
+            "scramble"
+          ]
+        },
+        {
+          "id": "lax-m-adjacent",
+          "title": "Slide from adjacent",
+          "directive": "Open set? Adjacent slides. Go on time.",
+          "why": "In an open set the closest teammate is the fastest help.",
+          "tags": [
+            "slide",
+            "open set"
+          ],
+          "viz": "Adjacent middie slides and the next man fills behind him.",
+          "template": "slide",
+          "bucket": "start",
+          "keys": [
+            "adjacent",
+            "open set",
+            "slide"
+          ]
+        },
+        {
+          "id": "lax-m-ride",
+          "title": "Ride the clear",
+          "directive": "Turnover? Ride hard. Force the bad pass.",
+          "why": "A hard ride takes away the easy outlet, so the clear needs one more pass.",
+          "tags": [
+            "ride"
+          ],
+          "viz": "Middie and attackman trap the clearing defender on the sideline.",
+          "template": "double",
+          "bucket": "start",
+          "keys": [
+            "ride",
+            "clear",
+            "riding"
+          ],
+          "game": {
+            "type": "concept",
+            "ask": "Ride the clear. Tap where the second rider goes."
+          },
+          "origin": "audit-new"
+        },
+        {
+          "id": "lax-m-getback",
+          "title": "Sprint back and match up",
+          "directive": "Turnover? Sprint back. Find a man.",
+          "why": "Matching up in the first 3 seconds stops the fast break.",
+          "tags": [
+            "transition",
+            "match up"
+          ],
+          "viz": "Middie sprints back while three defenders hold.",
+          "template": "hold",
+          "bucket": "start",
+          "keys": [
+            "sprint back",
+            "match up",
+            "get back"
+          ]
+        }
+      ],
+      "attack": [
+        {
+          "id": "lax-a-ride",
+          "title": "Ride after every turnover",
+          "directive": "Turnover? Take away the goalie's first outlet.",
+          "why": "Taking away the first outlet makes the clear long and slow.",
+          "tags": [
+            "ride"
+          ],
+          "viz": "Attackmen pin the clearing defender against the sideline.",
+          "template": "double",
+          "bucket": "start",
+          "keys": [
+            "ride",
+            "outlet",
+            "clear"
+          ],
+          "game": {
+            "type": "concept",
+            "ask": "Trap the clear. Tap where the second rider goes."
+          }
+        },
+        {
+          "id": "lax-a-ground",
+          "title": "Win ground balls up top",
+          "directive": "Loose ball on offense? Get there first.",
+          "why": "Every ground ball you win is another try for us and one less for them.",
+          "tags": [
+            "ground ball"
+          ],
+          "viz": "Attackman scoops a loose ball before the defender.",
+          "template": "loose",
+          "bucket": "start",
+          "keys": [
+            "ground ball",
+            "loose ball"
+          ]
+        },
+        {
+          "id": "lax-a-window",
+          "title": "Dodge to the bigger window",
+          "directive": "Dodge toward the middle, not the end line.",
+          "why": "Close and in the middle the cage looks huge. Wide and low it shrinks to nothing.",
+          "tags": [
+            "dodge",
+            "shooting"
+          ],
+          "viz": "The shot window grows as the dodger moves to the middle.",
+          "template": "danger",
+          "bucket": "start",
+          "change": [
+            "Small window",
+            "Big window"
+          ],
+          "keys": [
+            "dodge",
+            "space",
+            "middle"
+          ],
+          "game": {
+            "type": "concept",
+            "ask": "Tap the attacker with the biggest shot window."
+          },
+          "origin": "audit-new"
+        },
+        {
+          "id": "lax-a-feed",
+          "title": "Find the open man",
+          "directive": "Doubled? Find the man nobody is guarding.",
+          "why": "Two defenders on you means one teammate is open.",
+          "tags": [
+            "feed",
+            "double"
+          ],
+          "viz": "Two defenders collapse on the ball; one attacker stands open.",
+          "template": "talk",
+          "bucket": "start",
+          "change": [
+            "Force it",
+            "Find the open man"
+          ],
+          "keys": [
+            "open man",
+            "feed",
+            "doubled"
+          ],
+          "game": {
+            "type": "concept",
+            "ask": "You drew a double. Tap the OPEN teammate."
+          }
+        },
+        {
+          "id": "lax-a-commit",
+          "title": "Make them commit",
+          "directive": "4-on-3? Draw a defender, then move it.",
+          "why": "Every pass after a defender jumps leaves him a step behind.",
+          "tags": [
+            "fast break"
+          ],
+          "viz": "A defender jumps the ball; two passes later the low man is open.",
+          "template": "hold",
+          "bucket": "start",
+          "change": [
+            "Shoot into him",
+            "Pass past him"
+          ],
+          "keys": [
+            "fast break",
+            "numbers",
+            "draw"
+          ],
+          "game": {
+            "type": "choose",
+            "ask": "Fast break. A defender jumps you.",
+            "options": [
+              "PASS",
+              "SHOOT"
+            ],
+            "correct": "PASS",
+            "right": "He jumped, so someone is open. Move it.",
+            "wrong": "He is on you. The open man had the shot."
+          }
+        },
+        {
+          "id": "lax-a-hustle",
+          "title": "Ride to the whistle",
+          "directive": "Ball loose? Chase it until the whistle.",
+          "why": "The play is not over until the whistle. The player still running wins it.",
+          "tags": [
+            "effort"
+          ],
+          "viz": "Attackman keeps chasing the loose ball and wins it.",
+          "template": "hustle",
+          "bucket": "start",
+          "keys": [
+            "whistle",
+            "effort",
+            "hustle"
+          ]
+        }
+      ],
+      "goalie": [
+        {
+          "id": "lax-g-talk",
+          "title": "Direct the defense",
+          "directive": "Call ball, call the slide, call the cutter.",
+          "why": "You see the whole field, so your voice organizes six defenders.",
+          "tags": [
+            "talk",
+            "goalie"
+          ],
+          "viz": "Goalie calls; each defender takes one attacker.",
+          "template": "talk",
+          "bucket": "start",
+          "keys": [
+            "call",
+            "talk",
+            "voice"
+          ],
+          "game": {
+            "type": "concept",
+            "ask": "Nobody heard you. Tap the OPEN attacker."
+          }
+        },
+        {
+          "id": "lax-g-arc",
+          "title": "Own the arc",
+          "directive": "Step out on the arc toward the shooter.",
+          "why": "Stepping toward the shooter shrinks the cage he can see.",
+          "tags": [
+            "angle",
+            "goalie"
+          ],
+          "viz": "Shot window shrinks as the goalie steps toward the shooter.",
+          "template": "danger",
+          "bucket": "start",
+          "keys": [
+            "arc",
+            "step out",
+            "angle"
+          ],
+          "game": {
+            "type": "concept",
+            "ask": "Tap the most dangerous shooter."
+          }
+        },
+        {
+          "id": "lax-g-outlet",
+          "title": "Outlet fast",
+          "directive": "Save? Look up. Outlet in two seconds.",
+          "why": "Before the ride sets up, the field has the most open space.",
+          "tags": [
+            "outlet",
+            "clear"
+          ],
+          "viz": "Goalie saves and throws the outlet before riders get set.",
+          "template": "loose",
+          "bucket": "start",
+          "change": [
+            "Hold the ball",
+            "Outlet now"
+          ],
+          "keys": [
+            "outlet",
+            "save",
+            "clear"
+          ],
+          "game": {
+            "type": "time",
+            "ask": "Tap the moment you make the save.",
+            "cue": "SAVE!",
+            "right": "Fast outlet. The ride is not set yet.",
+            "wrong": "Too slow. The ride is set."
+          }
+        },
+        {
+          "id": "lax-g-hot",
+          "title": "Call the slide early",
+          "directive": "Dodger beat his man? Call 'hot' now.",
+          "why": "An early call gives your slide a head start.",
+          "tags": [
+            "slide",
+            "talk"
+          ],
+          "viz": "Goalie calls the slide the moment the dodger turns the corner.",
+          "template": "slide",
+          "bucket": "start",
+          "keys": [
+            "hot",
+            "slide",
+            "call"
+          ]
+        },
+        {
+          "id": "lax-g-set",
+          "title": "Be set on the break",
+          "directive": "Fast break? Set your feet. Play the shooter.",
+          "why": "Set feet and a big body cover more cage than a guess.",
+          "tags": [
+            "transition",
+            "goalie"
+          ],
+          "viz": "Goalie sets on the shooter while defenders hold.",
+          "template": "hold",
+          "bucket": "start",
+          "keys": [
+            "set",
+            "break",
+            "shooter"
+          ],
+          "game": {
+            "type": "choose",
+            "ask": "Fast break. The shooter winds up.",
+            "options": [
+              "SET",
+              "GUESS"
+            ],
+            "correct": "SET",
+            "right": "Set feet, big body. Make him beat you.",
+            "wrong": "A guess opens half the cage."
+          }
+        },
+        {
+          "id": "lax-g-rebound",
+          "title": "Control the rebound",
+          "directive": "Save it to your stick, not the crease.",
+          "why": "A rebound in the crease is a free try for them.",
+          "tags": [
+            "rebound"
+          ],
+          "viz": "Goalie traps the shot instead of kicking it into the crease.",
+          "template": "loose",
+          "bucket": "start",
+          "keys": [
+            "rebound",
+            "save"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -2,7 +2,7 @@
 ### *The Zero-Slop Lacrosse Mastery, Stick Doctoring & Printable Playbook Archive*
 **EDITION:** `BASQUIAT 👑 × MURAKAMI 🌸 // ST-100 HARDWARE MANUAL v1.0 🎛️`  
 **AGE RATING:** `AGES 10 TO 100 — LEARN IT IN 5 MINUTES, RETEACH A TEAMMATE IN 60 SECONDS`  
-**DAILY HEARTBEAT:** `6:00 PM EST AUTO-CURATOR (25+ ITEMS/DAY) + TOP-10 BLOG + TREND RADAR`  
+**DAILY HEARTBEAT:** `23:00 UTC CURATOR (6:00 PM EST / 7:00 PM EDT) · SEED SHELF IS VERIFIED FILM, NOT A VOUCH COUNT`  
 **LIVE VERCEL DEPLOYMENT:** **[https://lacrossetube.vercel.app](https://lacrossetube.vercel.app)**
 
 ---

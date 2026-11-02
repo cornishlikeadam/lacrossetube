@@ -2,7 +2,7 @@ name: Daily 6PM LacrosseTube Curator
 
 on:
   schedule:
-    # Runs every day at 6:00 PM EST (23:00 UTC)
+    # GitHub cron is UTC. 23:00 UTC is 6:00pm Eastern Standard Time and 7:00pm during daylight time.
     - cron: '0 23 * * *'
   workflow_dispatch:
 
@@ -20,13 +20,13 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Run 6:00 PM LacrosseTube Curator & Top-10 Blog Generator
+      - name: Run the daily curator
         run: python3 daily_6pm_curator.py
 
-      - name: Commit and push updated catalog & blog
+      - name: Commit shelf updates
         run: |
           git config user.name "LacrosseTube 6PM Bot"
           git config user.email "bot@lacrossetube.local"
           git add data/ blog/
-          git diff --staged --quiet || git commit -m "chore(6pm-curator): daily lacrosse video & playbook PDF harvest"
+          git diff --staged --quiet || git commit -m "chore(6pm-curator): daily lacrosse shelf harvest"
           git push

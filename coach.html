@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1124">
+<title>Coach desk · LacrosseTube</title>
+<meta name="description" content="Lacrosse only. Send one team link after a meeting. See your roster, who played, and scores per idea.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 26V10l7 6 6-12 6 12 7-6v16z' fill='%23ffb020' stroke='%230b1124' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Russo+One&display=swap">
+<link rel="stylesheet" href="/css/play.css">
+</head>
+<body>
+<div class="hud">
+  <a class="hud-logo" href="/coach">COACH DESK</a>
+  <a class="pill" href="/play">PLAYER APP ▶</a>
+  <a class="pill" href="/">FILM ROOM</a>
+</div>
+
+<main class="screen coach-screen">
+  <section class="coach-hero">
+    <p class="kicker">COACH TOOLS · ROSTER · WHO PLAYED · SCORES PER IDEA</p>
+    <h1>Coach dashboard</h1>
+    <p class="problem">Lacrosse only. Send one team link after a meeting. Each player gets the points for <b>their position</b>, plays them on their phone, and sends their results back to you. There is no server: the links carry the data, and this page keeps it on this device.</p>
+    <p class="alert" id="c-alert" role="alert" hidden></p>
+  </section>
+
+  <section class="panel" aria-labelledby="p1">
+    <h2 id="p1"><i>1</i> MAKE A TEAM LINK</h2>
+    <div class="grid2">
+      <label class="field" for="c-team">Team name<input id="c-team" maxlength="40" autocomplete="off" placeholder="Riverside Boys Lax"></label>
+      <label class="field" for="c-coach">Your name (players see it)<input id="c-coach" maxlength="40" autocomplete="off" placeholder="Coach Ana"></label>
+      <label class="field" for="c-sport">Sport<select id="c-sport"></select></label>
+    </div>
+    <div class="dropzone" id="c-drop">
+      <textarea id="c-text" spellcheck="false" aria-label="Meeting transcript" aria-describedby="c-status" placeholder="Paste the meeting: a Zoom or Teams transcript, Otter, captions, or your notes."></textarea>
+      <div class="dz-row">
+        <label class="file-btn" for="c-file">Open a file<input type="file" id="c-file" accept=".vtt,.srt,.sbv,.txt,.json,.md,text/plain,application/json"></label>
+        <button class="ghost" id="c-sample" type="button">Use a sample meeting</button>
+      </div>
+      <p class="dz-status" id="c-status" role="status">Paste the meeting or open the transcript file.</p>
+    </div>
+    <div class="row"><button class="btn" id="c-make" type="button">MAKE TEAM LINK</button></div>
+    <div class="linkbox" id="c-linkbox" hidden></div>
+  </section>
+
+  <section class="panel" aria-labelledby="p2">
+    <h2 id="p2"><i>2</i> ROSTER</h2>
+    <p class="hint" id="c-roster-for">One name or jersey number per line. Players type the same name or number when they send results. Numbers keep players' names off the links.</p>
+    <textarea id="c-roster" spellcheck="false" aria-label="Roster, one player per line" placeholder="#3&#10;#5&#10;#12&#10;#22"></textarea>
+    <div class="row"><button class="btn alt" id="c-roster-save" type="button">SAVE ROSTER</button><span class="hint" id="c-roster-note" role="status"></span></div>
+  </section>
+
+  <section class="panel" aria-labelledby="p3">
+    <h2 id="p3"><i>3</i> WHO PLAYED</h2>
+    <div class="sessions" id="c-sessions"></div>
+    <div class="row">
+      <label class="field" for="c-paste" style="flex:1 1 260px">Results link from a player<input id="c-paste" autocomplete="off" placeholder="https://…/coach#r=…"></label>
+      <button class="btn alt" id="c-add" type="button">ADD RESULTS</button>
+      <button class="ghost" id="c-device" type="button">Add this device's latest update</button>
+    </div>
+    <div class="summary" id="c-summary"></div>
+    <div class="tablewrap"><table class="roster" id="c-table"></table></div>
+    <div class="row"><button class="ghost" id="c-csv" type="button">Copy table as CSV</button><span class="hint" id="c-csv-note" role="status"></span></div>
+  </section>
+  <p class="fine" style="margin-top:18px">Coach data lives on this device only. Clearing site data clears it.</p>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script type="module" src="/field/coach.js"></script>
+</body>
+</html>

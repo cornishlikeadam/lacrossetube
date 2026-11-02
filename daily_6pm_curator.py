@@ -53,8 +53,9 @@ DOMAIN_KEYWORDS = [
 BLOCKLIST_KEYWORDS = [
     "fortnite", "minecraft", "valorant", "crypto", "bitcoin", "makeup",
     "prank", "reacting to", "unboxing haul", "tik tok mashup", "asmr",
-    "buick", "motor vehicle", "nhtsa", "fmvss", "climate crock", "wisconsin",
-    "la crosse", "wright & ditson", "base ball", "lawn tennis", "city directory"
+    "buick", "motor vehicle", "nhtsa", "fmvss", "climate crock",
+    "la crosse, wisconsin", "la crosse wisconsin", "city of la crosse", "la crosse wi",
+    "wright & ditson", "base ball", "lawn tennis", "city directory"
 ]
 
 
@@ -66,9 +67,25 @@ def is_on_topic(title: str, author: str, comment: str) -> bool:
     strict_lax = [
         "lacrosse", "lax", "powlax", "ecd", "stringking", "jm3", "first class lacrosse",
         "rabil", "thompson", "stick", "stringing", "pocket", "goalie", "dodg", "wall ball",
-        "10 man ride", "2 man game", "two-man game", "sidewall", "top string", "topstring"
+        "10 man ride", "2 man game", "two-man game", "sidewall", "top string", "topstring",
+        "pll", "nll", "ncaa", "nil", "faceoff", "fogo"
     ]
     return any(k in title_author for k in strict_lax)
+
+
+def keep_catalog_item(item: Dict[str, Any]) -> bool:
+    """Keep a shelf card through the nightly merge.
+
+    A verified YouTube id stays even when the title does not repeat the word
+    lacrosse (college film often says "Maryland vs. Virginia"). The blocklist
+    still drops cars, games, and La Crosse, Wisconsin.
+    """
+    blob = " ".join(str(item.get(k) or "") for k in ("title", "author", "curatorNote", "vouchQuote")).lower()
+    if any(b in blob for b in BLOCKLIST_KEYWORDS):
+        return False
+    if item.get("type") == "video":
+        return bool(re.fullmatch(r"[A-Za-z0-9_-]{11}", str(item.get("youtubeId") or "")))
+    return item.get("type") in {"archive", "source", "playbook"} and bool(item.get("url"))
 
 
 def fetch_json(url: str, timeout: int = 8) -> Optional[Any]:
@@ -143,17 +160,14 @@ def classify_item(text: str, query_tag: str, item_type: str = "video") -> Dict[s
             "avatar": "🛡️"
         }
 
-    if any(k in t for k in ["wall ball", "wallball", "film", "ncaa", "championship", "full game", "playbook", "clinic", "drill sheet"]):
-        if "wall" in t:
-            sub = "Wall-Ball Routines"
-        else:
-            sub = "Film Study & Clinics"
-        return {
-            "category": "playbooks",
-            "categoryLabel": "Playbook PDFs, Wall-Ball & Film Study",
-            "subTag": sub,
-            "avatar": "📑"
-        }
+    if any(k in t for k in ["interview", "podcast", "sit down", "sits down", "q&a", "q & a"]):
+        return {"category": "interviews", "categoryLabel": "Player Interviews", "subTag": "Player Interviews", "avatar": "🎙️"}
+    if any(k in t for k in ["nil ", " nil", "sponsor", "endorsement", "founder", "the business"]):
+        return {"category": "business", "categoryLabel": "The Business", "subTag": "The Business", "avatar": "📈"}
+    if any(k in t for k in ["wall ball", "wallball"]):
+        return {"category": "tips", "categoryLabel": "Tips & Tricks", "subTag": "Wall-Ball Routines", "avatar": "🎯"}
+    if any(k in t for k in ["highlight", "ncaa", "championship", "full game", "premier lacrosse", "world lacrosse"]):
+        return {"category": "games", "categoryLabel": "College & Pro Film", "subTag": "College & Pro Film", "avatar": "🎬"}
 
     if any(k in t for k in ["box", "two-man", "2-man", "pick", "seal", " slip", "canadian", "inside", "twister", "behind the back", "btb", "fake", "deception"]):
         sub = "Box & Two-Man Game"
@@ -173,7 +187,7 @@ def clean_html_snippet(raw: str) -> str:
     text = text.replace("&#x27;", "'").replace("&quot;", '"').replace("&amp;", "&").replace("&#x2F;", "/").replace("&gt;", ">")
     text = re.sub(r'https?:\/\/\S+', '', text)
     text = re.sub(r'\s+', ' ', text).strip()
-    return text[:220] if len(text) > 15 else "Vouched by lacrosse coaches and stick doctors for zero-fluff mechanics and high-percentage execution."
+    return text[:220] if len(text) > 15 else "Kept because the title and channel are lacrosse."
 
 
 def research_trends_and_discover_sources(discovered_channels: List[Dict[str, Any]], outbound_domains: Counter) -> Dict[str, Any]:
@@ -429,7 +443,7 @@ def scrape_reddit_and_community_videos(target_count: int = 24) -> tuple[List[Dic
         meta = verify_youtube_video(vid)
         if not meta:
             continue
-        quote = item["quotes"][0] if item["quotes"] else "Vouched by players and coaches for clear footwork, pocket mechanics, and game IQ."
+        quote = item["quotes"][0] if item["quotes"] else f"Film from {meta['author']}."
         if not is_on_topic(meta["title"], meta["author"], quote):
             continue
         cls = classify_item(meta["title"] + " " + quote, item["tag"], "video")
@@ -446,8 +460,9 @@ def scrape_reddit_and_community_videos(target_count: int = 24) -> tuple[List[Dic
             "title": meta["title"],
             "author": meta["author"],
             "authorAvatar": cls["avatar"],
-            "vouchCount": max(12, item.get("baseScore", 14) + len(item["authors"]) * 5),
+            "badge": "50% Still Frame",
             "sourceHub": item["sourceHub"],
+            "curatorNote": quote,
             "vouchQuote": quote,
             "url": f"https://www.youtube.com/watch?v={vid}",
             "addedAt": datetime.now().strftime("%Y-%m-%d 18:00")
@@ -494,26 +509,26 @@ def scrape_archive_lacrosse_pdfs(target_pdfs: int = 10) -> List[Dict[str, Any]]:
             desc = doc.get("description", "Printable lacrosse coaching playbook, drill manual, and historical rule reference.")
             if isinstance(desc, list):
                 desc = " ".join(desc)
-            if any(skip in title.lower() for skip in ["wisconsin", "la crosse", "city directory", "high school yearbook", "ordinance", "buick", "fmvss", "wright & ditson", "base ball"]):
+            if any(skip in title.lower() for skip in ["la crosse, wisconsin", "la crosse wisconsin", "city of la crosse", "city directory", "high school yearbook", "ordinance", "buick", "fmvss", "wright & ditson", "base ball"]):
                 continue
             downloads = int(doc.get("downloads", 180))
+            note = clean_html_snippet(str(desc)) or "Archive scan. This is a record on the Internet Archive, not a drill PDF hosted here."
             guides.append({
                 "id": f"ia-{ident}",
-                "type": "playbook",
-                "category": "playbooks",
-                "categoryLabel": "Playbook PDFs, Wall-Ball & Film Study",
-                "subTag": "Printable Playbook PDF",
-                "duration": "PDF · Printable Manual",
-                "formatBadge": "Open Archive PDF",
+                "type": "archive",
+                "category": "shelf",
+                "categoryLabel": "Sources & Archive Scans",
+                "subTag": "Archive scan",
+                "duration": "Archive scan",
+                "badge": "Archive scan",
                 "midpointStill": f"https://archive.org/services/img/{ident}",
-                "fallbackStill": "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=720&q=80",
+                "fallbackStill": "",
                 "title": title[:95],
                 "author": str(creator)[:45],
                 "authorAvatar": "📑",
-                "vouchCount": max(16, min(88, downloads // 50 + 15)),
-                "sourceHub": "Internet Archive Texts",
-                "vouchQuote": clean_html_snippet(str(desc)),
-                "pdfUrl": f"https://archive.org/details/{ident}",
+                "sourceHub": "Internet Archive",
+                "curatorNote": note,
+                "vouchQuote": note,
                 "url": f"https://archive.org/details/{ident}",
                 "addedAt": datetime.now().strftime("%Y-%m-%d 18:00")
             })
@@ -627,9 +642,10 @@ def get_foundational_lacrosse_curations() -> List[Dict[str, Any]]:
                     "title": meta["title"],
                     "author": meta["author"],
                     "authorAvatar": avatar,
-                    "vouchCount": max(48, 96 - len(verified_foundational) * 2),
-                    "sourceHub": hub,
-                    "vouchQuote": quote,
+                    "badge": "50% Still Frame",
+                    "sourceHub": meta["author"],
+                    "curatorNote": f"Film from {meta['author']}.",
+                    "vouchQuote": f"Film from {meta['author']}.",
                     "url": f"https://www.youtube.com/watch?v={vid}",
                     "addedAt": today_str
                 })
@@ -720,7 +736,8 @@ def get_foundational_lacrosse_curations() -> List[Dict[str, Any]]:
         }
     ]
 
-    return verified_foundational + playbook_pdfs
+    # Source pages and archive scans are already on the shelf. Do not add cards that pretend a homepage is a PDF.
+    return verified_foundational
 
 
 def generate_daily_top_10_blog(catalog: List[Dict[str, Any]], trends_report: Dict[str, Any]) -> Dict[str, Any]:
@@ -730,8 +747,7 @@ def generate_daily_top_10_blog(catalog: List[Dict[str, Any]], trends_report: Dic
     pretty_date = datetime.now().strftime("%B %d, %Y")
 
     videos = [x for x in catalog if x["type"] == "video"]
-    pdfs = [x for x in catalog if x["type"] == "playbook"]
-    top_10 = sorted(videos[:7] + pdfs[:3], key=lambda x: x.get("vouchCount", 0), reverse=True)[:10]
+    top_10 = videos[:10]
 
     md_lines = [
         f"# 👑🌸 LacrosseTube 6:00 PM Daily Dispatch — Top 10 of {len(catalog)} Curated ({pretty_date})",
@@ -740,7 +756,7 @@ def generate_daily_top_10_blog(catalog: List[Dict[str, Any]], trends_report: Dic
         "---",
         "",
         "## ⚡ 1. Executive Summary (What Moved on the Field Today)",
-        f"Today's 6:00 PM autonomous harvest verified **{len(catalog)} total human-vouched lacrosse tutorials, game-film breakdowns, and printable PDF playbooks** across **`r/lacrosse`, `r/stickdoctor`, ECD Lacrosse, POWLAX, StringKing, JM3 Sports, First Class Lacrosse, and Internet Archive texts**. ",
+        f"Today's shelf holds **{len(catalog)} lacrosse films and source cards**. A video is listed only after YouTube oEmbed accepts the id. A card that is not a video is an archive scan or a source page, not a PDF this site hosts. ",
         "Every video uses **50% midpoint still frames (`hq2.jpg`)** so players and coaches see the actual pocket channel, crease footwork, or slide package before clicking.",
         "",
         "### 📈 Today's Rising Lacrosse Trend Radar",
@@ -752,17 +768,17 @@ def generate_daily_top_10_blog(catalog: List[Dict[str, Any]], trends_report: Dic
         "",
         "---",
         "",
-        "## 🏆 2. The Top 10 Videos & Printable Playbooks Added Today",
+        "## 2. Ten films from the shelf",
         ""
     ])
 
     for idx, item in enumerate(top_10, 1):
-        badge = "📑 PRINTABLE PLAYBOOK PDF" if item["type"] == "playbook" else "🎬 50% MIDPOINT VIDEO"
+        badge = item.get("badge") or ("50% Still Frame" if item["type"] == "video" else item["type"])
         md_lines.extend([
             f"### `[{idx:02d}]` {item['title']}",
             f"- **Type:** {badge} · **Category:** `{item['categoryLabel']}` (`{item.get('subTag', '')}`)",
-            f"- **Coach / Creator:** {item['author']} · **Human Vouches:** `★ {item['vouchCount']}` via *{item['sourceHub']}*",
-            f"- **Why Players & Coaches Vouched For It:** *\"{item['vouchQuote']}\"*",
+            f"- **Channel:** {item['author']} · *{item.get('sourceHub', '')}*",
+            f"- **Curator note:** *\"{item.get('curatorNote') or item.get('vouchQuote', '')}\"*",
             f"- **Direct Link:** [{item['url']}]({item['url']})",
             ""
         ])
@@ -791,8 +807,8 @@ def generate_daily_top_10_blog(catalog: List[Dict[str, Any]], trends_report: Dic
         "id": f"blog-{date_slug}",
         "date": pretty_date,
         "timestamp": f"{date_slug} 18:00 EST",
-        "title": f"Daily 6PM Dispatch: Top 10 of {len(catalog)} Lacrosse Mastery Videos & Playbook PDFs ({pretty_date})",
-        "summary": f"Today's 25+/day automated 6:00 PM harvest verified {len(catalog)} total videos (with 50% midpoint frames) and printable coaching PDFs across r/lacrosse, r/stickdoctor, POWLAX, ECD, StringKing, JM3, and Internet Archive.",
+        "title": f"Daily shelf dispatch: {len(catalog)} lacrosse films and source cards ({pretty_date})",
+        "summary": f"The shelf holds {len(catalog)} cards. Videos passed oEmbed. Other cards are archive scans or source pages, not PDFs hosted here.",
         "markdownPath": f"blog/{date_slug}-top-10-dispatch.md",
         "top10": top_10,
         "trendingTopics": trends_report.get("trendingTopics", []),
@@ -824,15 +840,16 @@ def run_full_6pm_cycle():
         try:
             with open(catalog_path, "r") as f:
                 for old_item in json.load(f):
-                    if is_on_topic(old_item.get("title", ""), old_item.get("author", ""), old_item.get("vouchQuote", "")):
+                    if keep_catalog_item(old_item):
                         merged_map[old_item["id"]] = old_item
         except Exception:
             pass
 
     for item in foundational + community_videos + ia_guides:
-        merged_map[item["id"]] = item
+        if item["id"] not in merged_map and keep_catalog_item(item):
+            merged_map[item["id"]] = item
 
-    catalog = sorted(merged_map.values(), key=lambda x: x.get("vouchCount", 0), reverse=True)
+    catalog = list(merged_map.values())
 
     with open(catalog_path, "w") as f:
         json.dump(catalog, f, indent=2)
@@ -848,25 +865,10 @@ def run_full_6pm_cycle():
     with open(os.path.join(DATA_DIR, "live_bundle.js"), "w") as f:
         f.write(bundle_js)
 
-    # Also update standalone build/index.html and vibe-coding/build/index.html if index.html exists
-    index_path = os.path.join(BASE_DIR, "index.html")
-    if os.path.exists(index_path):
-        with open(index_path, "r") as f:
-            root_html = f.read()
-        standalone_html = root_html.replace(
-            '<script src="data/live_bundle.js"></script>',
-            f"<script>\n{bundle_js}\n</script>"
-        )
-        for rel_target in ["build/index.html", "vibe-coding/build/index.html"]:
-            t_path = os.path.join(BASE_DIR, rel_target)
-            os.makedirs(os.path.dirname(t_path), exist_ok=True)
-            with open(t_path, "w") as f:
-                f.write(standalone_html)
-
     print("=========================================================================")
     print(f"✅ COMPLETE! Total Live Curated Items in Locker/Vault: {len(catalog)} (Quota: {DAILY_ACQUISITION_TARGET}+/day)")
     print(f"   - Videos (50% Midpoint Frames):  {sum(1 for x in catalog if x['type'] == 'video')}")
-    print(f"   - Printable Playbook PDFs:       {sum(1 for x in catalog if x['type'] == 'playbook')}")
+    print(f"   - Source pages and archive scans: {sum(1 for x in catalog if x['type'] != 'video')}")
     print(f"   - Indexed Coaching Channels:     {len(trends_report.get('discoveredVideoChannels', []))}")
     print(f"   - Active Lacrosse Forums:        {len(trends_report.get('discoveredSources', []))}")
     print("=========================================================================")

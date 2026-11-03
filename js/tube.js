@@ -9,6 +9,7 @@ let previewMarks = null;
 let previewPractice = null;
 let clockT = 0;
 let clockTimer = 0;
+let markAt = null;
 let pendingSkill = '';
 let currentSubTag = 'all';
 let searchQuery = '';
@@ -479,16 +480,21 @@ function paintMarks(itemId) {
 
 function markForm(item) {
   if (!(item.type === 'video' && ytId(item.youtubeId))) return '';
-  const skills = LT.SKILLS.map(skill => `<button class="nav-btn" type="button" data-skill="${skill}" aria-pressed="${pendingSkill === skill}">${esc(skill)}</button>`).join('');
+  const skills = LT.SKILLS.map(skill => `<button class="nav-btn" type="button" data-skill="${skill}" aria-pressed="false">${esc(skill)}</button>`).join('');
   return `
     <div style="margin-top:16px;">
-      <div style="font-size:0.7rem; text-transform:uppercase; color:var(--accent); font-weight:700;">Mark this moment</div>
       <div class="mark-row">
         <span class="mark-clock" id="mark-clock" aria-live="polite" aria-label="Film time">${esc(LT.fmt(clockT))}</span>
-        <input class="mark-text" id="mark-text" maxlength="160" placeholder="Short note for this moment" aria-label="Note at this moment">
-        <button class="btn-action" type="button" id="add-mark">Mark this moment</button>
+        <button class="btn-action" type="button" id="open-mark">Mark this moment</button>
       </div>
-      <div class="skill-pills" aria-label="Skill">${skills}</div>
+      <div id="mark-composer" hidden>
+        <div class="mark-row">
+          <span class="mark-clock" id="mark-at">${esc(LT.fmt(clockT))}</span>
+          <input class="mark-text" id="mark-text" maxlength="160" placeholder="Short note" aria-label="Note at this moment">
+          <button class="btn-action" type="button" id="add-mark">Save mark</button>
+        </div>
+        <div class="skill-pills" aria-label="Skill">${skills}</div>
+      </div>
       <div id="mark-list"></div>
       <div class="mark-row">
         <button class="nav-btn" type="button" id="copy-marks">Copy marks link</button>
@@ -570,6 +576,7 @@ function openItemModal(id, startSeconds) {
   const saved = savedIds.includes(item.id);
   const start = Number.isFinite(Number(startSeconds)) ? Math.max(0, Math.floor(Number(startSeconds))) : 0;
   clockT = start;
+  markAt = null;
   pendingSkill = '';
   stopClock();
 
@@ -660,16 +667,31 @@ document.getElementById('modalBody').addEventListener('click', async (event) => 
     document.querySelectorAll('[data-skill]').forEach(btn => btn.setAttribute('aria-pressed', String(btn.dataset.skill === pendingSkill)));
     return;
   }
+  if (event.target.id === 'open-mark') {
+    markAt = clockT;
+    const composer = document.getElementById('mark-composer');
+    const at = document.getElementById('mark-at');
+    if (at) at.textContent = LT.fmt(markAt);
+    if (composer) composer.hidden = false;
+    document.getElementById('mark-text')?.focus();
+    return;
+  }
   if (event.target.id === 'add-mark') {
     const text = document.getElementById('mark-text')?.value || '';
-    const mark = LT.cleanMark({ t: clockT, text, skill: pendingSkill, at: Date.now() });
+    const mark = LT.cleanMark({ t: markAt == null ? clockT : markAt, text, skill: pendingSkill, at: Date.now() });
     const status = document.getElementById('mark-status');
     if (!mark) {
       if (status) status.textContent = 'Write the note first.';
       return;
     }
     keepMarks(itemId, marksNow(itemId).concat(mark));
-    document.getElementById('mark-text').value = '';
+    const note = document.getElementById('mark-text');
+    if (note) note.value = '';
+    pendingSkill = '';
+    document.querySelectorAll('[data-skill]').forEach(btn => btn.setAttribute('aria-pressed', 'false'));
+    const composer = document.getElementById('mark-composer');
+    if (composer) composer.hidden = true;
+    markAt = null;
     if (status) status.textContent = previewMarks ? 'Mark added. Keep these marks to save them on this device.' : 'Mark saved on this device.';
     return;
   }

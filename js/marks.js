@@ -1,7 +1,7 @@
 // Locker notes and practice cards. Packed links are deflated JSON in the hash.
 // Anything read from a link is untrusted: checked, trimmed, then escaped at render.
 (function () {
-  const SKILLS = ['help', 'slide', 'talk', 'angle', 'pick', 'danger', 'double', 'loose', 'hold', 'disguise', 'hustle', 'sidewall', 'mesh', 'leather'];
+  const SKILLS = ['help', 'slide', 'talk', 'angle', 'pick', 'danger', 'double', 'loose', 'hold', 'disguise', 'hustle', 'sidewall', 'mesh', 'leather', 'goalie'];
   const MARKS_KEY = 'lacrossetube_marks';
   const PRACTICE_KEY = 'lacrossetube_practice';
   const MAX_MARKS = 40;

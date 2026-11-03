@@ -4,9 +4,11 @@
   const SKILLS = ['help', 'slide', 'talk', 'angle', 'pick', 'danger', 'double', 'loose', 'hold', 'disguise', 'hustle', 'sidewall', 'mesh', 'leather', 'goalie'];
   const MARKS_KEY = 'lacrossetube_marks';
   const PRACTICE_KEY = 'lacrossetube_practice';
+  const PROFILE_KEY = 'lacrossetube_profile';
   const MAX_MARKS = 40;
   const MAX_STEPS = 5;
   const MAX_TEXT = 160;
+  const MAX_BY = 40;
   const MAX_TITLE = 60;
   const MAX_PACK = 18000;
 
@@ -17,8 +19,11 @@
     const text = String(raw.text || '').replace(/\s+/g, ' ').trim().slice(0, MAX_TEXT);
     if (!text) return null;
     const skill = SKILLS.includes(raw.skill) ? raw.skill : '';
+    const by = String(raw.by || '').replace(/\s+/g, ' ').trim().slice(0, MAX_BY);
     const at = Number(raw.at);
-    return { v: 1, t: Math.round(t * 10) / 10, text, skill, at: Number.isFinite(at) ? at : Date.now() };
+    const out = { v: 1, t: Math.round(t * 10) / 10, text, skill, at: Number.isFinite(at) ? at : Date.now() };
+    if (by) out.by = by;
+    return out;
   }
 
   function cleanId(id) {
@@ -75,6 +80,11 @@
     return (loadMarkMap()[cleanId(itemId)] || []).slice();
   }
 
+  function allMarksCount() {
+    const map = loadMarkMap();
+    return Object.values(map).reduce((sum, arr) => sum + arr.length, 0);
+  }
+
   function setMarks(itemId, marks) {
     const id = cleanId(itemId);
     if (!id) return [];
@@ -97,6 +107,36 @@
   function savePractice(practice) {
     const clean = cleanPractice(practice) || { v: 1, title: 'Practice', steps: [] };
     store()?.setItem(PRACTICE_KEY, JSON.stringify(clean));
+    return clean;
+  }
+
+  function loadProfile() {
+    try {
+      const raw = JSON.parse(store()?.getItem(PROFILE_KEY) || 'null');
+      if (!raw || typeof raw !== 'object') return null;
+      return {
+        position: String(raw.position || 'all').slice(0, 30),
+        focus: String(raw.focus || 'all').slice(0, 40),
+        format: String(raw.format || 'both').slice(0, 20),
+        completedAt: Number(raw.completedAt) || Date.now()
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function saveProfile(profile) {
+    if (!profile) {
+      store()?.removeItem(PROFILE_KEY);
+      return null;
+    }
+    const clean = {
+      position: String(profile.position || 'all').slice(0, 30),
+      focus: String(profile.focus || 'all').slice(0, 40),
+      format: String(profile.format || 'both').slice(0, 20),
+      completedAt: Date.now()
+    };
+    store()?.setItem(PROFILE_KEY, JSON.stringify(clean));
     return clean;
   }
 
@@ -157,7 +197,8 @@
   }
 
   globalThis.LT = {
-    SKILLS, MAX_STEPS, MAX_TEXT, cleanMark, cleanPractice, cleanSharedMarks,
-    marksFor, setMarks, loadPractice, savePractice, pack, unpack, readHash, fmt
+    SKILLS, MAX_STEPS, MAX_TEXT, MAX_BY, cleanMark, cleanPractice, cleanSharedMarks,
+    loadMarkMap, marksFor, allMarksCount, setMarks, loadPractice, savePractice,
+    loadProfile, saveProfile, pack, unpack, readHash, fmt
   };
 })();

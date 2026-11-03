@@ -1,6 +1,238 @@
 <!DOCTYPE html>
-<html lang="en">
-<meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=/">
-<title>LacrosseTube</title>
-<p><a href="/">LacrosseTube film room</a></p>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LacrosseTube</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tube.css">
+</head>
+<body>
+
+  <header>
+    <a href="#" class="brand">
+      <div class="brand-icon">🥍</div>
+      <div class="brand-title">
+        LacrosseTube
+        <span class="brand-tag">Film, interviews, and stick work</span>
+      </div>
+    </a>
+
+    <div class="search-container">
+      <div class="search-wrapper">
+        <input 
+          type="text" 
+          id="searchInput" 
+          class="search-input" 
+          placeholder="Search action or clip: &quot;slide from the right&quot;, &quot;sidewall knot in rain&quot;, &quot;goalie arc save&quot;..."
+        >
+        <span class="search-shortcut">/</span>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="nav-btn" type="button" id="onboardingBtn" title="3-step player & coach setup">🎯 Setup</button>
+      <button class="nav-btn nav-btn-accent" type="button" id="aiToggleBtn" title="Ask the catalog-aware lacrosse shelf">💬 Ask Shelf</button>
+      <a class="nav-btn" href="/play">What Coach Said</a>
+      <a class="nav-btn" href="/coach">Coach desk</a>
+      <div class="cron-indicator" title="GitHub cron is 23:00 UTC, which is 6:00pm Eastern Standard Time and 7:00pm during daylight time.">
+        <span class="pulse-dot"></span>
+        <span>6PM EST</span>
+      </div>
+      <button class="nav-btn" id="savedToggleBtn">
+        <span>Locker</span>
+        <span class="vault-count" id="vaultCount">0</span>
+      </button>
+      <label class="nav-btn" for="sharedFile">Open file</label>
+      <input id="sharedFile" type="file" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <!-- Unified Widget Search/Filter Control Bar -->
+  <section class="catalog-widget-bar" aria-label="Catalog navigation and filters">
+    <div class="chips-bar">
+      <div class="chip chip-special active" data-category="dispatch">👑 Shelf Dispatch</div>
+      <div class="chip" data-category="all">🌸 Whole shelf</div>
+      <div class="chip" data-category="games">🎬 College & Pro Film</div>
+      <div class="chip" data-category="interviews">🎙️ Interviews</div>
+      <div class="chip" data-category="tips">🎯 Tips & Tricks</div>
+      <div class="chip" data-category="business">📈 The Business</div>
+      <div class="chip" data-category="pockets">🥍 Stick Doctoring</div>
+      <div class="chip" data-category="defense">🛡️ Defense</div>
+      <div class="chip" data-category="box">⚡ Box</div>
+      <div class="chip" data-category="shelf">📑 Sources & Scans</div>
+      <div class="chip chip-special" data-category="blog">📰 Dispatch log</div>
+      <div class="chip chip-special" data-category="trends">📡 Trend, Channel & Forum Radar</div>
+    </div>
+
+    <!-- Compact Toolbar: Quick Position Icons, Sort, Mobile 2x2/Swipe Toggle & Single Entry Point for Multi-Variation Controls -->
+    <div class="widget-controls-row">
+      <div class="position-pills" role="group" aria-label="Position view">
+        <button type="button" class="pos-pill active" data-pos="all">All Positions</button>
+        <button type="button" class="pos-pill" data-pos="attack">⚡ Attack</button>
+        <button type="button" class="pos-pill" data-pos="midfield">🏃 Midfield</button>
+        <button type="button" class="pos-pill" data-pos="defense">🛡️ LSM / Defense</button>
+        <button type="button" class="pos-pill" data-pos="goalie">🧱 Goalie</button>
+        <button type="button" class="pos-pill" data-pos="fogo">⚔️ FOGO</button>
+        <button type="button" class="pos-pill" data-pos="box">🇨🇦 Box vs Field</button>
+        <button type="button" class="pos-pill" data-pos="stick">🧵 Stick Doctor</button>
+      </div>
+
+      <div class="sort-and-drawer-controls">
+        <label class="sort-label" for="sortSelect">Sort:</label>
+        <select id="sortSelect" class="sort-select" aria-label="Sort shelf">
+          <option value="default">👑 Curator & Shelf</option>
+          <option value="trending">🔥 Trending / Rising</option>
+          <option value="marked">📌 Most Marked & Saved</option>
+          <option value="action">⚡ Action Clip Match</option>
+        </select>
+        <button type="button" class="nav-btn mobile-view-toggle" id="mobileLayoutBtn" title="Toggle 2x2 grid or horizontal swipe">⊞ 2×2</button>
+        <button type="button" class="nav-btn" id="filterDrawerBtn" aria-expanded="false">🎛️ Drill & Action Filters ▾</button>
+      </div>
+    </div>
+
+    <!-- Collapsible Multi-Variation Controls Drawer (Single Entry Point) -->
+    <div class="subtags-bar" id="filterDrawer" hidden>
+      <div class="drawer-section">
+        <span class="subtag-label">Drill filter</span>
+        <span class="subtag-pill active" data-sub="all">All Sub-Topics</span>
+        <span class="subtag-pill" data-sub="Pocket & Mesh Channeling">🧵 Mesh Channeling</span>
+        <span class="subtag-pill" data-sub="Sidewall Knots">🪢 Sidewall Knots</span>
+        <span class="subtag-pill" data-sub="Traditional Leather">🦌 Traditional Leather</span>
+        <span class="subtag-pill" data-sub="Box & Two-Man Game">🇨🇦 Box & Two-Man</span>
+        <span class="subtag-pill" data-sub="Dodging & Interior Finishing">⚡ Dodging & Finishing</span>
+        <span class="subtag-pill" data-sub="Defensive IQ & Slides">🛡️ Slides & Approach</span>
+        <span class="subtag-pill" data-sub="Rides & Clears">🐎 10-Man Rides & Clears</span>
+        <span class="subtag-pill" data-sub="Goalie Positioning">🧱 Goalie Arc</span>
+        <span class="subtag-pill" data-sub="Wall-Ball Routines">🧱 Wall-Ball</span>
+        <span class="subtag-pill" data-sub="College & Pro Film">🎬 College & Pro</span>
+        <span class="subtag-pill" data-sub="Tips & Tricks">🎯 Tips</span>
+        <span class="subtag-pill" data-sub="Player Interviews">🎙️ Interviews</span>
+        <span class="subtag-pill" data-sub="The Business">📈 Business</span>
+        <span class="subtag-pill" data-sub="Archive scan">📜 Archive scans</span>
+        <span class="subtag-pill" data-sub="Source page">🔗 Source pages</span>
+      </div>
+      <div class="drawer-section action-starters">
+        <span class="subtag-label">Clip search</span>
+        <button type="button" class="action-query-chip" data-action-q="slide from the right">“slide from the right”</button>
+        <button type="button" class="action-query-chip" data-action-q="sidewall knot that holds in rain">“sidewall knot that holds in rain”</button>
+        <button type="button" class="action-query-chip" data-action-q="goalie arc save">“goalie arc save”</button>
+        <button type="button" class="action-query-chip" data-action-q="box two-man pick and seal">“box two-man pick and seal”</button>
+        <button type="button" class="action-query-chip" data-action-q="10-man ride trap">“10-man ride trap”</button>
+        <button type="button" class="action-query-chip" data-action-q="traditional leather pita pocket">“traditional leather pita pocket”</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lightweight Skippable Onboarding Quiz Banner (Local-Only) -->
+  <section class="onboarding-panel" id="onboardingPanel" hidden aria-label="Quick lacrosse setup quiz">
+    <div class="onboarding-header">
+      <div>
+        <span class="onboarding-kicker">30-Second Local Setup (Skippable · Stored only on this device)</span>
+        <h3>Tune your Shelf Dispatch, position filters, and starter practice card</h3>
+      </div>
+      <button type="button" class="nav-btn" id="skipOnboardingBtn">Skip ✕</button>
+    </div>
+    <div class="onboarding-grid">
+      <div class="quiz-group">
+        <label>1. Your primary role / position</label>
+        <div class="quiz-options" data-quiz="position">
+          <button type="button" class="quiz-opt active" data-val="attack">⚡ Attack / Midfield</button>
+          <button type="button" class="quiz-opt" data-val="defense">🛡️ Close D / LSM</button>
+          <button type="button" class="quiz-opt" data-val="goalie">🧱 Goalie</button>
+          <button type="button" class="quiz-opt" data-val="box">🇨🇦 Box Player</button>
+          <button type="button" class="quiz-opt" data-val="stick">🧵 Stick Doctor</button>
+        </div>
+      </div>
+      <div class="quiz-group">
+        <label>2. What are you working on today?</label>
+        <div class="quiz-options" data-quiz="focus">
+          <button type="button" class="quiz-opt active" data-val="slides">🛡️ Slides, Rides & Footwork</button>
+          <button type="button" class="quiz-opt" data-val="stringing">🥍 Pocket Hold & Sidewall Knots</button>
+          <button type="button" class="quiz-opt" data-val="dodging">⚡ Dodging & Two-Man Seals</button>
+          <button type="button" class="quiz-opt" data-val="wallball">🧱 20-Min Wall-Ball & Film IQ</button>
+        </div>
+      </div>
+      <div class="quiz-group">
+        <label>3. Game format</label>
+        <div class="quiz-options" data-quiz="format">
+          <button type="button" class="quiz-opt active" data-val="both">Field + Box</button>
+          <button type="button" class="quiz-opt" data-val="field">Field Only</button>
+          <button type="button" class="quiz-opt" data-val="box">Box / Indoor</button>
+        </div>
+      </div>
+    </div>
+    <div class="onboarding-actions">
+      <button type="button" class="btn-action" id="saveOnboardingBtn">Apply my setup & load starter practice</button>
+      <button type="button" class="nav-btn" id="applyOnboardingOnlyBtn">Bias shelf without changing practice card</button>
+      <button type="button" class="nav-btn" id="resetOnboardingBtn">Reset to default</button>
+    </div>
+  </section>
+
+  <div class="manifesto-banner">
+    <div class="manifesto-text">
+      <span id="activeProfileBadge" class="profile-pill" hidden></span>
+      <span>College film, interviews, tips, and stick work. A card says Source page or Archive scan when it is not a video.</span>
+    </div>
+    <div class="stats-counter" id="statsLine">Loading the shelf...</div>
+  </div>
+
+  <main>
+    <div id="specialLayerMount"></div>
+    <div class="grid-container" id="cardsGrid"></div>
+  </main>
+
+  <!-- Catalog-Aware Lacrosse AI Drawer -->
+  <aside class="ai-drawer" id="aiDrawer" hidden aria-label="Catalog-aware Lacrosse Assistant">
+    <div class="ai-drawer-header">
+      <div>
+        <span class="onboarding-kicker">Shelf + Locker + Dispatch Aware (Local / Zero Account)</span>
+        <h3>💬 Ask the LacrosseTube Shelf</h3>
+      </div>
+      <button type="button" class="nav-btn" id="closeAiDrawerBtn">✕</button>
+    </div>
+    <p class="hint">Ask for specific clips, knots, defensive rotations, or practice plans from the 511-item shelf and your local Locker/marks.</p>
+    <div class="ai-quick-prompts">
+      <button type="button" class="action-query-chip" data-ai-q="Which films teach adjacent slides and recovery?">Adjacent slides & recovery</button>
+      <button type="button" class="action-query-chip" data-ai-q="Sidewall knot pattern that holds a channel in rain">Sidewall knot for rain</button>
+      <button type="button" class="action-query-chip" data-ai-q="Goalie 5-point arc footwork and low saves">Goalie arc & low saves</button>
+      <button type="button" class="action-query-chip" data-ai-q="Build a 3-step practice from today's Dispatch and my Locker">Build a 3-step practice</button>
+    </div>
+    <form id="aiForm" class="ai-input-row">
+      <input type="text" id="aiQuestionInput" class="mark-text" placeholder="Ask e.g. 'slide from the right', 'fix pocket whip', 'box two-man seal'..." maxlength="180">
+      <button type="submit" class="btn-action">Ask Shelf</button>
+    </form>
+    <div id="aiResponseArea" class="ai-response-area"></div>
+  </aside>
+
+  <aside class="practice-bar" id="practiceBar" hidden>
+    <h2>Practice card</h2>
+    <div class="mark-row">
+      <input class="practice-title" id="practiceTitle" maxlength="60" aria-label="Practice title" value="Practice">
+      <span class="hint" id="practiceCount"></span>
+      <button class="nav-btn" type="button" id="practicePrint">Print drill sheet</button>
+      <button class="nav-btn" type="button" id="practiceCopy">Copy link</button>
+      <button class="nav-btn" type="button" id="practiceSave" hidden>Save into Locker</button>
+      <button class="nav-btn" type="button" id="practiceClear">Clear</button>
+    </div>
+    <div id="practiceSteps"></div>
+    <p class="hint" id="practiceNote" role="status"></p>
+  </aside>
+  <article id="practiceSheet"></article>
+
+  <div class="modal-overlay" id="playerModal">
+    <div class="modal-content" style="position: relative;">
+      <button class="modal-close-btn">✕</button>
+      <div class="modal-video-wrap" id="modalVideoWrap"></div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="/data/live_bundle.js"></script>
+  <script src="/js/marks.js"></script>
+  <script src="/js/assistant.js"></script>
+  <script src="/js/tube.js"></script>
+</body>
+</html>

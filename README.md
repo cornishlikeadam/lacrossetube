@@ -49,7 +49,9 @@ No paid AI, provider credentials, public browser key, or paid fallback was added
 
 `scripts/research_digest.py` queries PubMed and World Lacrosse using Python's standard library. No API key is required. Online publication dates are preferred over future print issue dates. It writes `data/research_posts.json`, `data/research_bundle.js`, and a Markdown issue in `blog/`. The separate bundle is preserved when the legacy shelf curator runs.
 
-`.github/workflows/reading-desk.yml` schedules checks for both Eastern UTC offsets and retries. The script gates publication to **11am America/New_York or later, every other calendar day starting November 3, 2026**, including daylight-saving changes. It refuses duplicate same-day issues. GitHub schedules can be delayed; exact-minute delivery is not guaranteed. The workflow must be on the repository's default branch with Actions enabled. GitHub/Vercel account quotas still apply.
+**The active schedule is a Codex automation in the project chat:** every other day at **11am America/New_York**, starting November 3, 2026. It runs the script, checks the generated issue, commits only the research outputs, pushes the update, and verifies production. This Mac and Codex must be available; an unavailable device can delay a run. No new AI API service or key is used.
+
+The script independently checks the calendar day and local time, including daylight-saving changes, and refuses duplicate same-day issues. Optional GitHub workflow templates are saved in `scripts/workflow-templates/`; they are **not installed or active**, because the current GitHub connection lacks workflow-management permission. These templates could move scheduling off the Mac after that permission is granted. GitHub/Vercel account quotas still apply.
 
 ```sh
 python3 scripts/research_digest.py              # Publish an issue now, once per date

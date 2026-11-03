@@ -1,0 +1,34 @@
+name: Reading desk — every other day at 11am Eastern
+on:
+  schedule:
+    # Both Eastern offsets. The script checks local date/time and avoids duplicates.
+    # The :20 retries allow recovery from transient source outages.
+    - cron: '0,20 15,16 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: reading-desk
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Gather current primary-source links
+        run: python3 scripts/research_digest.py --scheduled
+      - name: Save the new issue
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/research_posts.json data/research_bundle.js blog/
+          if ! git diff --staged --quiet; then
+            # Keep the bot as committer. The repository owner is the author so
+            # Vercel can associate this private-repository update with its owner.
+            git commit --author="${GITHUB_REPOSITORY_OWNER} <${GITHUB_REPOSITORY_OWNER_ID}+${GITHUB_REPOSITORY_OWNER}@users.noreply.github.com>" -m 'Publish the latest reading desk issue'
+            git pull --rebase
+            git push
+          fi

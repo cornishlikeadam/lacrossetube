@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>LacrosseTube</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,10 +22,10 @@
 
     <div class="search-container">
       <div class="search-wrapper">
-        <input 
-          type="text" 
-          id="searchInput" 
-          class="search-input" 
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input" aria-label="Search the lacrosse shelf"
           placeholder="Search action or clip: &quot;slide from the right&quot;, &quot;sidewall knot in rain&quot;, &quot;goalie arc save&quot;..."
         >
         <span class="search-shortcut">/</span>
@@ -33,19 +33,22 @@
     </div>
 
     <div class="nav-actions">
-      <button class="nav-btn" type="button" id="onboardingBtn" title="3-step player & coach setup">🎯 Setup</button>
-      <button class="nav-btn nav-btn-accent" type="button" id="aiToggleBtn" title="Ask the catalog-aware lacrosse shelf">💬 Ask Shelf</button>
+      <button class="nav-btn" type="button" id="onboardingBtn" aria-label="Setup" title="Player setup and optional lacrosse learning check"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2"/></svg><span class="nav-label">Setup</span></button>
+      <button class="nav-btn nav-btn-accent" type="button" id="aiToggleBtn" aria-label="Ask Shelf" title="Ask the catalog-aware lacrosse shelf"><svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-3 2 1.8-6A8.5 8.5 0 1 1 21 11.5Z"/><path d="M7 10h9m-9 4h6"/></svg><span class="nav-label">Ask Shelf</span></button>
+      <details class="nav-tools"><summary class="nav-btn">Tools</summary><div class="nav-tools-menu">
       <a class="nav-btn" href="/play">What Coach Said</a>
       <a class="nav-btn" href="/coach">Coach desk</a>
-      <div class="cron-indicator" title="GitHub cron is 23:00 UTC, which is 6:00pm Eastern Standard Time and 7:00pm during daylight time.">
+      <label class="nav-btn" for="sharedFile">Open shared file</label>
+      <div class="cron-indicator" title="Reading desk: every other day at 11am Eastern. Scheduled publication can be delayed by GitHub.">
         <span class="pulse-dot"></span>
-        <span>6PM EST</span>
+        <span>11AM ET reading desk</span>
       </div>
-      <button class="nav-btn" id="savedToggleBtn">
-        <span>Locker</span>
+      </div></details>
+      <button class="nav-btn" id="savedToggleBtn" aria-label="Locker">
+        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 3h14v18H5zM9 7h6m-6 3h6m-6 6h1"/></svg><span class="nav-label">Locker</span>
         <span class="vault-count" id="vaultCount">0</span>
       </button>
-      <label class="nav-btn" for="sharedFile">Open file</label>
+
       <input id="sharedFile" type="file" accept="application/json,.json" hidden>
     </div>
   </header>
@@ -53,18 +56,18 @@
   <!-- Unified Widget Search/Filter Control Bar -->
   <section class="catalog-widget-bar" aria-label="Catalog navigation and filters">
     <div class="chips-bar">
-      <div class="chip chip-special active" data-category="dispatch">👑 Shelf Dispatch</div>
-      <div class="chip" data-category="all">🌸 Whole shelf</div>
-      <div class="chip" data-category="games">🎬 College & Pro Film</div>
-      <div class="chip" data-category="interviews">🎙️ Interviews</div>
-      <div class="chip" data-category="tips">🎯 Tips & Tricks</div>
-      <div class="chip" data-category="business">📈 The Business</div>
-      <div class="chip" data-category="pockets">🥍 Stick Doctoring</div>
-      <div class="chip" data-category="defense">🛡️ Defense</div>
-      <div class="chip" data-category="box">⚡ Box</div>
-      <div class="chip" data-category="shelf">📑 Sources & Scans</div>
-      <div class="chip chip-special" data-category="blog">📰 Dispatch log</div>
-      <div class="chip chip-special" data-category="trends">📡 Trend, Channel & Forum Radar</div>
+      <button type="button" class="chip chip-special active" data-category="dispatch">👑 Shelf Dispatch</button>
+      <button type="button" class="chip" data-category="all">🌸 Whole shelf</button>
+      <button type="button" class="chip" data-category="games">🎬 College & Pro Film</button>
+      <button type="button" class="chip" data-category="interviews">🎙️ Interviews</button>
+      <button type="button" class="chip" data-category="tips">🎯 Tips & Tricks</button>
+      <button type="button" class="chip" data-category="business">📈 The Business</button>
+      <button type="button" class="chip" data-category="pockets">🥍 Stick Doctoring</button>
+      <button type="button" class="chip" data-category="defense">🛡️ Defense</button>
+      <button type="button" class="chip" data-category="box">⚡ Box</button>
+      <button type="button" class="chip" data-category="shelf">📑 Sources & Scans</button>
+      <button type="button" class="chip chip-special" data-category="blog">📰 Journal</button>
+      <button type="button" class="chip chip-special" data-category="trends">📡 Trend, Channel & Forum Radar</button>
     </div>
 
     <!-- Compact Toolbar: Quick Position Icons, Sort, Mobile 2x2/Swipe Toggle & Single Entry Point for Multi-Variation Controls -->
@@ -88,8 +91,8 @@
           <option value="marked">📌 Most Marked & Saved</option>
           <option value="action">⚡ Action Clip Match</option>
         </select>
-        <button type="button" class="nav-btn mobile-view-toggle" id="mobileLayoutBtn" title="Toggle 2x2 grid or horizontal swipe">⊞ 2×2</button>
-        <button type="button" class="nav-btn" id="filterDrawerBtn" aria-expanded="false">🎛️ Drill & Action Filters ▾</button>
+        <button type="button" class="nav-btn mobile-view-toggle" id="mobileLayoutBtn" title="Switch between two-column grid and four-film swipe pages" aria-pressed="false">2×2 grid</button>
+        <button type="button" class="nav-btn" id="filterDrawerBtn" aria-controls="filterDrawer" aria-expanded="false">Filters</button>
       </div>
     </div>
 
@@ -97,22 +100,22 @@
     <div class="subtags-bar" id="filterDrawer" hidden>
       <div class="drawer-section">
         <span class="subtag-label">Drill filter</span>
-        <span class="subtag-pill active" data-sub="all">All Sub-Topics</span>
-        <span class="subtag-pill" data-sub="Pocket & Mesh Channeling">🧵 Mesh Channeling</span>
-        <span class="subtag-pill" data-sub="Sidewall Knots">🪢 Sidewall Knots</span>
-        <span class="subtag-pill" data-sub="Traditional Leather">🦌 Traditional Leather</span>
-        <span class="subtag-pill" data-sub="Box & Two-Man Game">🇨🇦 Box & Two-Man</span>
-        <span class="subtag-pill" data-sub="Dodging & Interior Finishing">⚡ Dodging & Finishing</span>
-        <span class="subtag-pill" data-sub="Defensive IQ & Slides">🛡️ Slides & Approach</span>
-        <span class="subtag-pill" data-sub="Rides & Clears">🐎 10-Man Rides & Clears</span>
-        <span class="subtag-pill" data-sub="Goalie Positioning">🧱 Goalie Arc</span>
-        <span class="subtag-pill" data-sub="Wall-Ball Routines">🧱 Wall-Ball</span>
-        <span class="subtag-pill" data-sub="College & Pro Film">🎬 College & Pro</span>
-        <span class="subtag-pill" data-sub="Tips & Tricks">🎯 Tips</span>
-        <span class="subtag-pill" data-sub="Player Interviews">🎙️ Interviews</span>
-        <span class="subtag-pill" data-sub="The Business">📈 Business</span>
-        <span class="subtag-pill" data-sub="Archive scan">📜 Archive scans</span>
-        <span class="subtag-pill" data-sub="Source page">🔗 Source pages</span>
+        <button type="button" class="subtag-pill active" data-sub="all">All Sub-Topics</button>
+        <button type="button" class="subtag-pill" data-sub="Pocket & Mesh Channeling">🧵 Mesh Channeling</button>
+        <button type="button" class="subtag-pill" data-sub="Sidewall Knots">🪢 Sidewall Knots</button>
+        <button type="button" class="subtag-pill" data-sub="Traditional Leather">🦌 Traditional Leather</button>
+        <button type="button" class="subtag-pill" data-sub="Box & Two-Man Game">🇨🇦 Box & Two-Man</button>
+        <button type="button" class="subtag-pill" data-sub="Dodging & Interior Finishing">⚡ Dodging & Finishing</button>
+        <button type="button" class="subtag-pill" data-sub="Defensive IQ & Slides">🛡️ Slides & Approach</button>
+        <button type="button" class="subtag-pill" data-sub="Rides & Clears">🐎 10-Man Rides & Clears</button>
+        <button type="button" class="subtag-pill" data-sub="Goalie Positioning">🧱 Goalie Arc</button>
+        <button type="button" class="subtag-pill" data-sub="Wall-Ball Routines">🧱 Wall-Ball</button>
+        <button type="button" class="subtag-pill" data-sub="College & Pro Film">🎬 College & Pro</button>
+        <button type="button" class="subtag-pill" data-sub="Tips & Tricks">🎯 Tips</button>
+        <button type="button" class="subtag-pill" data-sub="Player Interviews">🎙️ Interviews</button>
+        <button type="button" class="subtag-pill" data-sub="The Business">📈 Business</button>
+        <button type="button" class="subtag-pill" data-sub="Archive scan">📜 Archive scans</button>
+        <button type="button" class="subtag-pill" data-sub="Source page">🔗 Source pages</button>
       </div>
       <div class="drawer-section action-starters">
         <span class="subtag-label">Clip search</span>
@@ -130,8 +133,8 @@
   <section class="onboarding-panel" id="onboardingPanel" hidden aria-label="Quick lacrosse setup quiz">
     <div class="onboarding-header">
       <div>
-        <span class="onboarding-kicker">30-Second Local Setup (Skippable · Stored only on this device)</span>
-        <h3>Tune your Shelf Dispatch, position filters, and starter practice card</h3>
+        <p class="hint">Optional setup · saved only on this device</p>
+        <h3>Build your starting shelf</h3>
       </div>
       <button type="button" class="nav-btn" id="skipOnboardingBtn">Skip ✕</button>
     </div>
@@ -139,7 +142,9 @@
       <div class="quiz-group">
         <label>1. Your primary role / position</label>
         <div class="quiz-options" data-quiz="position">
-          <button type="button" class="quiz-opt active" data-val="attack">⚡ Attack / Midfield</button>
+          <button type="button" class="quiz-opt active" data-val="attack">Attack</button>
+          <button type="button" class="quiz-opt" data-val="midfield">Midfield</button>
+          <button type="button" class="quiz-opt" data-val="fogo">FOGO</button>
           <button type="button" class="quiz-opt" data-val="defense">🛡️ Close D / LSM</button>
           <button type="button" class="quiz-opt" data-val="goalie">🧱 Goalie</button>
           <button type="button" class="quiz-opt" data-val="box">🇨🇦 Box Player</button>
@@ -164,6 +169,13 @@
         </div>
       </div>
     </div>
+    <details class="assessment-panel"><summary>Try the lacrosse learning check · 4 questions</summary>
+      <p class="hint">Optional film-study questions. Missed answers add topics to your recommendations. This is a starting point, not a player grade.</p>
+      <div id="assessmentQuestions"></div>
+      <button type="button" class="nav-btn" id="checkAssessment">Check my answers</button>
+      <div id="assessmentResults" role="status"></div>
+    </details>
+    <p id="setupStatus" class="hint" role="status"></p>
     <div class="onboarding-actions">
       <button type="button" class="btn-action" id="saveOnboardingBtn">Apply my setup & load starter practice</button>
       <button type="button" class="nav-btn" id="applyOnboardingOnlyBtn">Bias shelf without changing practice card</button>
@@ -179,21 +191,26 @@
     <div class="stats-counter" id="statsLine">Loading the shelf...</div>
   </div>
 
-  <main>
+  <main id="catalogWidget" aria-label="Lacrosse catalog">
     <div id="specialLayerMount"></div>
-    <div class="grid-container" id="cardsGrid"></div>
+    <div class="grid-container" id="cardsGrid" tabindex="0" aria-label="Film results"></div>
+    <nav id="catalogPager" class="catalog-pager" aria-label="Swipe pages" hidden>
+      <button type="button" class="nav-btn" id="previousCatalogPage" aria-label="Previous four films">Previous</button>
+      <span id="catalogPageStatus" class="hint" role="status"></span>
+      <button type="button" class="nav-btn" id="nextCatalogPage" aria-label="Next four films">Next</button>
+    </nav>
   </main>
 
   <!-- Catalog-Aware Lacrosse AI Drawer -->
-  <aside class="ai-drawer" id="aiDrawer" hidden aria-label="Catalog-aware Lacrosse Assistant">
+  <aside class="ai-drawer" id="aiDrawer" hidden aria-label="Local lacrosse shelf guide">
     <div class="ai-drawer-header">
       <div>
-        <span class="onboarding-kicker">Shelf + Locker + Dispatch Aware (Local / Zero Account)</span>
+        <p class="hint">Local shelf guide · free for everyone</p>
         <h3>💬 Ask the LacrosseTube Shelf</h3>
       </div>
       <button type="button" class="nav-btn" id="closeAiDrawerBtn">✕</button>
     </div>
-    <p class="hint">Ask for specific clips, knots, defensive rotations, or practice plans from the 511-item shelf and your local Locker/marks.</p>
+    <p class="hint">Find films and practice ideas using the shelf, Dispatch, and your local Locker and marks. Uses local matching and written coaching cues; live AI is not connected.</p>
     <div class="ai-quick-prompts">
       <button type="button" class="action-query-chip" data-ai-q="Which films teach adjacent slides and recovery?">Adjacent slides & recovery</button>
       <button type="button" class="action-query-chip" data-ai-q="Sidewall knot pattern that holds a channel in rain">Sidewall knot for rain</button>
@@ -222,16 +239,20 @@
   </aside>
   <article id="practiceSheet"></article>
 
-  <div class="modal-overlay" id="playerModal">
+  <div class="modal-overlay" id="playerModal" role="dialog" aria-modal="true" aria-label="Film and timestamped notes">
     <div class="modal-content" style="position: relative;">
-      <button class="modal-close-btn">✕</button>
+      <button class="modal-close-btn" aria-label="Close film">✕</button>
       <div class="modal-video-wrap" id="modalVideoWrap"></div>
       <div class="modal-body" id="modalBody"></div>
     </div>
   </div>
 
   <script src="/data/live_bundle.js"></script>
+  <script src="/data/research_bundle.js"></script>
+  <script src="/js/assessment.js"></script>
   <script src="/js/marks.js"></script>
+  <script src="/js/player-clock.js"></script>
+  <script src="/data/stick-patterns.js"></script>
   <script src="/js/assistant.js"></script>
   <script src="/js/tube.js"></script>
 </body>

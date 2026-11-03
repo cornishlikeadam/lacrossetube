@@ -1,5 +1,5 @@
 // Catalog-aware, Locker/Marks-aware, and Dispatch-aware Lacrosse Assistant.
-// Runs 100% locally/edge in the browser with zero required API keys (and optional window.ai / localStorage key support).
+// Local keyword matching and written coaching cues. No hosted AI or API calls.
 (function () {
   const ACTION_INDEX = [
     {
@@ -12,14 +12,14 @@
     {
       keys: ['knot', 'rain', 'weather', 'sidewall', 'hold', 'channel', 'mesh', 'string', 'pocket', 'hook', 'whip', 'si', 'anchor', 'barrel', 'topstring'],
       label: 'All-Weather Sidewall Knots & Channel Lock',
-      summary: 'To keep a pocket from bagging out in rain: lock the top 3 mesh diamonds with a 9D topstring and tight Anchor/SI knots, stack an SI at the sweet spot, and pound the pocket before tuning shooters.',
+      summary: 'Use a pattern matched to your head and mesh. Check sidewall tension and test release before and after weather changes; use the reference film for the knot sequence.',
       cats: ['pockets'],
       subTags: ['Sidewall Knots', 'Pocket & Mesh Channeling']
     },
     {
       keys: ['leather', 'traditional', 'pita', 'wood', 'heritage', 'crosslace'],
       label: 'Traditional Leather & Heritage Stringing',
-      summary: 'Pre-stretch the 4 leathers, interlock the center track (Pita runner) for a natural ball track, and tension outside crosslace diamonds slightly tighter than the center channel.',
+      summary: 'Follow the maker’s leather and crosslace sequence, then compare spacing and tension on both sides. Keep the source, head, and materials with a saved pattern.',
       cats: ['pockets', 'shelf'],
       subTags: ['Traditional Leather', 'Archive scan']
     },
@@ -102,26 +102,29 @@
     const dispatchIds = new Set((dispatch.items || []).map(i => i.id));
 
     // Check if the user is asking specifically about their Locker or Marks
-    const askingLocker = /\b(my locker|saved|my marks|marked|practice card)\b/i.test(lower);
-    let pool = askingLocker && savedIds.length
-      ? catalog.filter(item => savedIds.includes(item.id) || (markMap[item.id] && markMap[item.id].length))
-      : catalog;
-    if (!pool.length) pool = catalog;
+    const askingLocker = /\b(my locker|saved|my marks|marked)\b/i.test(lower);
+    const askingDispatch = /\b(dispatch|today.s drop)\b/i.test(lower);
+    let pool = askingLocker || askingDispatch ? catalog.filter(item =>
+      (askingLocker && (savedIds.includes(item.id) || (markMap[item.id] || []).length)) ||
+      (askingDispatch && dispatchIds.has(item.id))) : catalog;
+    if ((askingLocker || askingDispatch) && !pool.length) {
+      return { question: q, coachingLine: 'No films in that selection yet. Save a film or mark a moment, or ask about the whole shelf.', contextNotes: [], picks: [] };
+    }
 
     // Score all items
     const ranked = pool
       .map(item => ({ item, score: scoreItemForQuery(item, tokens, dispatchIds, savedIds, markMap) }))
-      .sort((a, b) => b.score - a.score || (b.item.vouchCount || 0) - (a.item.vouchCount || 0));
+      .sort((a, b) => b.score - a.score || (window.LT_ASSESSMENT?.score(b.item, profile) || 0) - (window.LT_ASSESSMENT?.score(a.item, profile) || 0));
 
     const picks = ranked.slice(0, 4).map(r => r.item);
 
     // Find matching tactical coaching cue
-    let matchedCluster = ACTION_INDEX.find(c => tokens.some(t => c.keys.includes(t)));
+    let matchedCluster = ACTION_INDEX.map(cluster => ({ cluster, hits: cluster.keys.filter(key => lower.includes(key)).length })).sort((a, b) => b.hits - a.hits).find(row => row.hits > 0)?.cluster;
     if (!matchedCluster && profile) {
       matchedCluster = ACTION_INDEX.find(c => c.keys.includes((profile.focus || '').toLowerCase())) || ACTION_INDEX[0];
     }
 
-    // Build response text
+    // Select a written cue; this guide does not generate clinical or news advice.
     let coachingLine = matchedCluster
       ? `**${matchedCluster.label}:** ${matchedCluster.summary}`
       : `Searched **${catalog.length} shelf items**, **${(dispatch.items || []).length} Dispatch drops**, and **${savedIds.length} Locker saves** for *"${q}"*.`;
@@ -130,7 +133,10 @@
     const dispatchHits = picks.filter(p => dispatchIds.has(p.id));
     const markedHits = picks.filter(p => (markMap[p.id] || []).length > 0);
 
-    const contextNotes = [];
+    const contextNotes = ['Local matching · shelf references, not a live AI answer.'];
+    if (/injur|concuss|medicine|pain|diagnos|supplement|rehab/i.test(lower)) {
+      coachingLine = 'This shelf guide can find training references, but cannot diagnose an injury or prescribe rehabilitation. Ask a qualified clinician about symptoms and return-to-play decisions.';
+    }
     if (dispatchHits.length) {
       const dItem = dispatch.items.find(d => d.id === dispatchHits[0].id);
       contextNotes.push(`👑 **In Today's Dispatch:** *${dispatchHits[0].title}* — ${dItem?.why || ''}`);
@@ -140,19 +146,6 @@
       contextNotes.push(`📌 **Your Local Mark (${window.LT ? window.LT.fmt(m.t) : m.t + 's'}):** "${m.text}"${m.by ? ` — *${m.by}*` : ''}`);
     }
 
-    // Optional Chrome built-in Prompt API (window.ai) enhancement if available locally
-    if (window.ai && typeof window.ai.createTextSession === 'function') {
-      try {
-        const session = await window.ai.createTextSession();
-        const prompt = `You are a concise lacrosse coach assistant for LacrosseTube. Question: "${q}". Top matching shelf films: ${picks.map(p => p.title + ' by ' + p.author).join('; ')}. Give a 2-sentence technical lacrosse answer.`;
-        const aiText = await session.prompt(prompt);
-        if (aiText && aiText.trim()) {
-          coachingLine = aiText.trim();
-        }
-      } catch {
-        // Fallback to deterministic local coaching synthesis
-      }
-    }
 
     return {
       question: q,

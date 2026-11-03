@@ -15,7 +15,8 @@ let previewPractice = null;
 let currentModalItemId = null;
 let clockT = 0;
 let clockTimer = 0;
-let playerPlaying = false;
+let clockSynced = false;
+let returnFocus = null;
 let markAt = null;
 let pendingSkill = '';
 let userProfile = window.LT?.loadProfile ? window.LT.loadProfile() : null;
@@ -136,28 +137,28 @@ function whyHereFor(item) {
   return `Why it's here: Selected for ${sub || item.categoryLabel || 'the shelf'} (${author}).`;
 }
 
-// Phase 2.2: Trending / Rising score calculation using lightweight lacrosse niche trend signals + local marks/saves
-const TREND_KEYWORDS = [
-  { rx: /sidewall|knot|channel|mesh|top\s*string|ecd|stringking/i, boost: 28 },
-  { rx: /box|two-man|2\s*man|seal|pick|nll|thompson/i, boost: 26 },
-  { rx: /10\s*man|ride|clear|slide|coma|adjacent|powlax/i, boost: 25 },
-  { rx: /sixes|world lacrosse|olympic|pll|championship|2026|2025/i, boost: 24 },
-  { rx: /goalie|arc|save|outlet/i, boost: 22 },
-  { rx: /wall\s*ball|500|routine|drill/i, boost: 21 }
-];
-
+// Rising reflects this device's recent activity plus the editor's Dispatch weight.
 function trendingScore(item) {
-  const blob = `${item.title || ''} ${item.subTag || ''} ${item.author || ''} ${item.curatorNote || ''}`;
-  let score = Number(item.vouchCount) || 50;
-  for (const tk of TREND_KEYWORDS) {
-    if (tk.rx.test(blob)) score += tk.boost;
-  }
-  if (savedIds.includes(item.id)) score += 35;
-  const marksCount = window.LT ? LT.marksFor(item.id).length : 0;
-  score += marksCount * 22;
-  if ((DISPATCH?.items || []).some(d => d.id === item.id)) score += 30;
-  if (userProfile && matchesProfile(item, userProfile)) score += 20;
+  const now = Date.now();
+  const activity = readSaveActivity();
+  const recent = at => Math.max(0, 1 - Math.max(0, now - Number(at || 0)) / (14 * 86400000));
+  let score = Math.min(20, Math.max(0, Number(item.curatorWeight) || 0));
+  if ((DISPATCH?.items || []).some(d => d.id === item.id)) score += 20;
+  if (savedIds.includes(item.id)) score += 5 + 35 * recent(activity[item.id]);
+  for (const mark of LT.marksFor(item.id)) score += 2 + 20 * recent(mark.at);
   return score;
+}
+
+function readSaveActivity() {
+  try {
+    const value = JSON.parse(localStorage.getItem('lacrossetube_save_activity') || '{}');
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  } catch { return {}; }
+}
+
+function profileScore(item, profile) {
+  if (!profile) return 0;
+  return (matchesPosition(item, profile.position) ? 16 : 0) + LT_ASSESSMENT.score(item, profile);
 }
 
 // Phase 2.3: Position-specific view matching & Clip-level / action search scoring
@@ -198,7 +199,7 @@ function matchesPosition(item, pos) {
   if (!rule) return true;
   const blob = `${item.title || ''} ${item.subTag || ''} ${item.categoryLabel || ''} ${item.curatorNote || ''} ${item.author || ''}`;
   if (rule.rx.test(blob)) return true;
-  return rule.cats.includes(item.category);
+  return !['goalie', 'fogo'].includes(pos) && rule.cats.includes(item.category);
 }
 
 // Clip-level / Action search expansion (handles natural phrases like "slide from the right" or "sidewall knot that holds in rain")
@@ -261,14 +262,7 @@ function actionSearchScore(item, rawQuery) {
 }
 
 function matchesProfile(item, profile) {
-  if (!profile) return false;
-  if (profile.position && profile.position !== 'all' && matchesPosition(item, profile.position)) return true;
-  const blob = `${item.title || ''} ${item.subTag || ''} ${item.category || ''}`.toLowerCase();
-  if (profile.focus === 'stringing' && item.category === 'pockets') return true;
-  if (profile.focus === 'slides' && item.category === 'defense') return true;
-  if (profile.focus === 'dodging' && (item.category === 'box' || /dodg|shoot/i.test(blob))) return true;
-  if (profile.focus === 'wallball' && (/wall|film/i.test(blob) || item.category === 'games')) return true;
-  return false;
+  return profileScore(item, profile) > 0;
 }
 
 function thumbHtml(item) {
@@ -293,28 +287,47 @@ function updateProfileBadge() {
     return;
   }
   const posLabels = {
-    attack: '⚡ Attack/Mid',
+    attack: 'Attack',
+    midfield: 'Midfield',
+    fogo: 'FOGO',
     defense: '🛡️ Defense/LSM',
     goalie: '🧱 Goalie',
     box: '🇨🇦 Box',
     stick: '🧵 Stick Doctor'
   };
   badge.hidden = false;
-  badge.textContent = `Setup: ${posLabels[userProfile.position] || userProfile.position} · ${userProfile.focus}`;
+  const check = LT_ASSESSMENT.evaluate(userProfile.answers);
+  badge.textContent = `Setup: ${posLabels[userProfile.position] || userProfile.position} · ${LT_ASSESSMENT.LABELS[userProfile.focus] || userProfile.focus}${check.answered ? ' · learning check saved' : ''}`;
 }
 
 function toggleSave(id, event) {
   if (event) event.stopPropagation();
   if (typeof id !== 'string' || !id) return;
-  if (savedIds.includes(id)) savedIds = savedIds.filter(i => i !== id);
-  else savedIds.push(id);
-  localStorage.setItem('lacrossetube_vault', JSON.stringify(savedIds));
+  const next = savedIds.includes(id) ? savedIds.filter(i => i !== id) : savedIds.concat(id);
+  try {
+    LT.saveLocal('lacrossetube_vault', next);
+    const activity = readSaveActivity();
+    if (next.includes(id)) activity[id] = Date.now();
+    else delete activity[id];
+    LT.saveLocal('lacrossetube_save_activity', activity);
+    savedIds = next;
+  } catch (error) {
+    document.getElementById('statsLine').textContent = error.message;
+    return;
+  }
   updateVaultCounter();
   renderView();
 }
 
 function toggleSavedFilter() {
   savedOnly = !savedOnly;
+  if (savedOnly) {
+    currentCategory = 'all'; currentPosition = 'all'; currentSubTag = 'all'; searchQuery = '';
+    document.getElementById('searchInput').value = '';
+    document.querySelectorAll('.chip').forEach(el => el.classList.toggle('active', el.dataset.category === 'all'));
+    document.querySelectorAll('.pos-pill').forEach(el => el.classList.toggle('active', el.dataset.pos === 'all'));
+    document.querySelectorAll('.subtag-pill').forEach(el => el.classList.toggle('active', el.dataset.sub === 'all'));
+  }
   const btn = document.getElementById('savedToggleBtn');
   btn.style.borderColor = savedOnly ? 'var(--accent)' : 'var(--border-color)';
   renderView();
@@ -324,6 +337,12 @@ function setCategory(cat) {
   currentCategory = cat;
   currentSubTag = 'all';
   savedOnly = false;
+  if (cat === 'dispatch') {
+    currentPosition = 'all'; currentSort = 'default'; searchQuery = '';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('sortSelect').value = 'default';
+    document.querySelectorAll('.pos-pill').forEach(el => el.classList.toggle('active', el.dataset.pos === 'all'));
+  }
   document.querySelectorAll('.chip').forEach(el => {
     el.classList.toggle('active', el.dataset.category === cat);
   });
@@ -365,6 +384,10 @@ function setSubTag(sub) {
 
 function handleSearch() {
   searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+  if (searchQuery && ['dispatch', 'blog', 'trends'].includes(currentCategory)) {
+    currentCategory = 'all';
+    document.querySelectorAll('.chip').forEach(el => el.classList.toggle('active', el.dataset.category === 'all'));
+  }
   renderView();
 }
 
@@ -380,111 +403,61 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Phase 2.4: Stick-Doctoring Layer (Side-by-side patterns, progressive 4-stage sequence, before/after stills)
-function renderStickDoctorLayer() {
-  const emptyToStrung = CATALOG.find(i => i.id === 'yt-oRYrLLYtfRs') || CATALOG.find(i => i.category === 'pockets');
-  const topString9D = CATALOG.find(i => i.id === 'yt-QhNACCmrZzo') || CATALOG.find(i => i.subTag === 'Pocket & Mesh Channeling');
-  const barrelKnot = CATALOG.find(i => i.id === 'yt-z6PvwML96is') || CATALOG.find(i => i.subTag === 'Sidewall Knots');
-  const tradShooters = CATALOG.find(i => i.id === 'yt-1RPGBkWi6Ss') || CATALOG.find(i => i.subTag === 'Traditional Leather');
-
-  return `
-    <section class="stick-doctor-layer" aria-label="Stick-Doctoring Workbench">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
-        <div>
-          <div class="onboarding-kicker">🥍 Stick-Doctoring Layer · Patterns, Progressive Sequence & Channel Stills</div>
-          <h2 style="font-size:1.25rem; font-weight:800; margin-top:3px;">Pocket Pattern Bench & 4-Stage Stringing Sequence</h2>
-          <p class="hint">Click any stage card to open the film at that stringing step, or compare sidewall recipes side-by-side.</p>
-        </div>
-      </div>
-
-      <h3 style="font-size:0.9rem; margin-top:14px; color:#fb923c;">1. Progressive 4-Stage Sequence (Empty Head → Strung & Tuned)</h3>
-      <div class="stage-sequence-grid">
-        <div class="stage-card" data-id="${esc(emptyToStrung?.id || '')}" style="cursor:pointer;">
-          <div class="vouch-header"><span>Stage 01 · Prep & Throat</span><span>Empty Head</span></div>
-          ${emptyToStrung ? `<img class="stage-thumb" src="${esc(safeUrl(emptyToStrung.midpointStill))}" alt="Stage 1 Empty head to strung" loading="lazy">` : ''}
-          <div style="font-weight:700; font-size:0.84rem;">Pre-stretch 10D mesh & map sidewall holes</div>
-          <p class="hint">Stretch mesh diamonds horizontally + vertically so pocket depth never bags in rain.</p>
-        </div>
-        <div class="stage-card" data-id="${esc(topString9D?.id || '')}" style="cursor:pointer;">
-          <div class="vouch-header"><span>Stage 02 · 9D Topstring</span><span>Scoop Lock</span></div>
-          ${topString9D ? `<img class="stage-thumb" src="${esc(safeUrl(topString9D.midpointStill))}" alt="Stage 2 9D Topstring" loading="lazy">` : ''}
-          <div style="font-weight:700; font-size:0.84rem;">Symmetrical 9-Diamond Topstring Tension</div>
-          <p class="hint">Center the middle diamond on the scoop bridge; lock outer loops equal on both sidewalls.</p>
-        </div>
-        <div class="stage-card" data-id="${esc(barrelKnot?.id || '')}" style="cursor:pointer;">
-          <div class="vouch-header"><span>Stage 03 · Sidewall Channel</span><span>SI & Anchor Knots</span></div>
-          ${barrelKnot ? `<img class="stage-thumb" src="${esc(safeUrl(barrelKnot.midpointStill))}" alt="Stage 3 Sidewall knots" loading="lazy">` : ''}
-          <div style="font-weight:700; font-size:0.84rem;">Pull the Upper Channel, Stack the Sweet Spot</div>
-          <p class="hint">Use 3 tight Special Interlocks (SI) up top, then a Stacked SI or 2-diamond skip at the pocket apex.</p>
-        </div>
-        <div class="stage-card" data-id="${esc(tradShooters?.id || '')}" style="cursor:pointer;">
-          <div class="vouch-header"><span>Stage 04 · Pound & Shooters</span><span>Finished Channel</span></div>
-          ${tradShooters ? `<img class="stage-thumb" src="${esc(safeUrl(tradShooters.midpointStill))}" alt="Stage 4 Shooters and finish" loading="lazy">` : ''}
-          <div style="font-weight:700; font-size:0.84rem;">60-Second Bat Pound + Progressive Shooter Ramp</div>
-          <p class="hint">Pound the pocket before tying shooters (tight top nylon → medium lace → loose bottom lace).</p>
-        </div>
-      </div>
-
-      <h3 style="font-size:0.9rem; margin-top:16px; color:#34d399;">2. Side-by-Side Pocket Pattern Recipes & Before/After Channel Comparison</h3>
-      <div class="pattern-compare-grid">
-        <div class="pattern-card">
-          <div class="vouch-header"><span>⚡ Mid-Low Shifted Channel</span><span>Attack / Two-Hand Dodger</span></div>
-          <div class="knot-recipe">9D Top → Tie → 1 → SI → SI → SI → SSI → 1 → 1 → Tie</div>
-          <p class="hint"><strong>Before vs. After:</strong> Unpulled top diamonds flare wide; 3 consecutive SIs narrow the upper chute for zero-whip quick releases.</p>
-        </div>
-        <div class="pattern-card">
-          <div class="vouch-header"><span>🇨🇦 Mid-High Toe Hold</span><span>Box / Outside Shooter / Pole</span></div>
-          <div class="knot-recipe">9D Top → Tie → SI → Stacked SI → 1 → 1 → 1 → SI → Tie</div>
-          <p class="hint"><strong>Before vs. After:</strong> High stacked knot forms an immediate shelf under the scoop for one-handed fakes and toe-drag hold.</p>
-        </div>
-        <div class="pattern-card">
-          <div class="vouch-header"><span>🦌 4-Leather Traditional Pita</span><span>All-Weather Heritage Track</span></div>
-          <div class="knot-recipe">4 Leathers → Interlocked Center Pita Track → 6 Sidewall Diamonds</div>
-          <p class="hint"><strong>Before vs. After:</strong> Pre-oiled deer/cowhide leathers + tight outer crosslace keep a legal 4-inch pocket in heavy rain.</p>
-        </div>
-      </div>
-    </section>
-  `;
+function patternImage(image, label) {
+  const src = image && safeUrl(image.src);
+  return src ? `<figure><img class="stage-thumb" src="${esc(src)}" alt="${esc(image.alt || label)}" loading="lazy"><figcaption class="hint">${esc(image.credit || '')}</figcaption></figure>` : `<div class="stage-image-pending">${esc(label)} · image not supplied</div>`;
 }
 
-// Phase 2.4: Traditional Leather / Heritage Track under Sources & Scans
+function patternRecord(record) {
+  const sources = record.sourceIds.map(id => CATALOG.find(item => item.id === id)).filter(Boolean);
+  return `<article class="pattern-record">
+    <h3>${esc(record.title)}</h3>
+    ${patternImage(record.image, 'Pattern reference')}
+    <p class="hint">${esc(record.note)}</p>
+    ${record.head || record.mesh ? `<p class="hint">${esc(record.head || 'Head not recorded')} · ${esc(record.mesh || 'Mesh not recorded')}</p>` : ''}
+    ${record.recipe ? `<p class="knot-recipe">${esc(record.recipe)}</p>` : ''}
+    <div class="pattern-sources">${sources.map(item => `<button type="button" class="nav-btn" data-id="${esc(item.id)}">${esc(item.author)} · reference film</button>`).join('')}</div>
+    ${record.stages.length ? `<details class="pattern-stages"><summary>Follow the four stages</summary><div class="stage-sequence-grid">${record.stages.map((stage, index) => `<article class="stage-card">
+      <h4>${index + 1}. ${esc(stage.label)}</h4>
+      ${patternImage(stage.image, stage.label)}
+      <p class="hint">${esc(stage.cue)}</p>
+      <button type="button" class="nav-btn" data-id="${esc(stage.itemId)}" ${stage.time != null ? `data-start="${esc(stage.time)}"` : ''}>${stage.time == null ? 'Open reference film' : 'Watch at ' + esc(LT.fmt(stage.time))}</button>
+      ${stage.time == null ? '<p class="hint">Stage timestamp not verified yet.</p>' : ''}
+    </article>`).join('')}</div></details>` : ''}
+    <details><summary>Before / after comparison</summary><div class="before-after-grid">${patternImage(record.before, 'Before')}${patternImage(record.after, 'After')}</div></details>
+  </article>`;
+}
+
+function renderStickDoctorLayer() {
+  const records = window.LACROSSETUBE_PATTERNS || [];
+  return `<section class="stick-doctor-layer" aria-label="Stick doctor workbench">
+    <h2>Pocket workbench</h2><p class="hint">Compare mesh and traditional references. Expand a track for the sequence; stage images appear when supplied.</p>
+    <div class="pattern-compare-grid">${records.map(patternRecord).join('')}</div>
+  </section>`;
+}
+
 function renderHeritageTrack() {
-  const beersItem = CATALOG.find(i => i.id === 'ia-cihm_05682');
-  const tradVideos = CATALOG.filter(i => i.subTag === 'Traditional Leather').slice(0, 3);
-  return `
-    <section class="heritage-track-banner" aria-label="Traditional Leather and Heritage Track">
-      <div class="onboarding-kicker">🦌 Traditional Leather & Heritage Track · Sources, Wood Craft & Archival Scans</div>
-      <h2 style="font-size:1.2rem; font-weight:800; margin-top:3px;">From Haudenosaunee Hickory & Rawhide to Modern 4-Leather Pita Pockets</h2>
-      <p class="hint" style="margin-top:4px;">Primary historical scans and traditional leather stringing references preserved alongside the source shelf.</p>
-      <div class="pattern-compare-grid">
-        ${beersItem ? `
-          <div class="pattern-card" data-id="${esc(beersItem.id)}" style="cursor:pointer;">
-            <div class="vouch-header"><span>📜 1869 Archival Scan</span><span>Primary Text</span></div>
-            <div style="font-weight:700; font-size:0.86rem;">${esc(beersItem.title)}</div>
-            <p class="hint">${esc(noteFor(beersItem))}</p>
-          </div>
-        ` : ''}
-        ${tradVideos.map(v => `
-          <div class="pattern-card" data-id="${esc(v.id)}" style="cursor:pointer;">
-            <div class="vouch-header"><span>🦌 Traditional Leather Film</span><span>${esc(v.author)}</span></div>
-            <div style="font-weight:700; font-size:0.86rem;">${esc(v.title)}</div>
-            <p class="hint">${esc(whyHereFor(v))}</p>
-          </div>
-        `).join('')}
-      </div>
-    </section>
-  `;
+  const records = (window.LACROSSETUBE_PATTERNS || []).filter(record => record.track === 'heritage');
+  const scans = CATALOG.filter(item => item.type === 'archive' && /lacrosse/i.test(item.title || ''));
+  return `<section class="heritage-track-banner" aria-label="Traditional leather and heritage sources">
+    <h2>Traditional leather & heritage sources</h2>
+    <p class="hint">Keep the maker and source with each reference. Historical accounts reflect their authors and periods; read them alongside the makers’ own instruction.</p>
+    <div class="pattern-compare-grid">${records.map(patternRecord).join('')}</div>
+    ${scans.length ? `<details><summary>Historical scans (${scans.length})</summary>${scans.map(item => `<button type="button" class="nav-btn" data-id="${esc(item.id)}">${esc(item.title)} · ${esc(item.author)}</button>`).join('')}</details>` : '<p class="hint">Historical scans will appear here when added to Sources & Scans.</p>'}
+  </section>`;
 }
 
 function renderBlogView() {
   document.getElementById('specialLayerMount').innerHTML = '';
   const grid = document.getElementById('cardsGrid');
   const blog = BLOGS[0];
+  const research = window.LACROSSETUBE_RESEARCH || [];
   if (!blog) {
     grid.innerHTML = '<div class="blog-panel"><h3>No dispatch on the shelf yet.</h3></div>';
     return;
   }
-  document.getElementById('statsLine').innerText = `Shelf dispatch · ${blog.timestamp || ''}`;
+  document.getElementById('statsLine').innerText = research.length ? `Journal · latest reading desk ${research[0].date}` : `Shelf dispatch · ${blog.timestamp || ''}`;
+  const researchHtml = research.length ? `<section class="reading-desk"><h2>Reading desk</h2><p class="hint">New issues every other day at 11am Eastern. Research references and official announcements, linked to the original sources.</p>${research.map((post, index) => `<details class="blog-post" ${index === 0 ? 'open' : ''}><summary>${esc(post.title)}</summary><p class="hint">${esc(post.summary)}</p>${post.items.map(row => `<article class="research-link"><p class="hint">${esc(row.topic)} · ${esc(row.kind)}</p><h3><a href="${esc(safeUrl(row.url))}" target="_blank" rel="noopener">${esc(row.title)}</a></h3><p class="hint">${esc(row.source)} · ${esc(row.published)}</p><p class="hint">${esc(row.note)}</p></article>`).join('')}${post.missingTopics?.length ? `<p class="hint">No new source item in this issue: ${esc(post.missingTopics.join(', '))}.</p>` : ''}</details>`).join('')}</section>` : '<section><h2>Reading desk</h2><p class="hint">The next source-linked issue will appear here after publication.</p></section>';
   const top10Html = (blog.top10 || []).map((item, idx) => `
     <div class="blog-rank-item" data-id="${esc(item.id)}" style="cursor:pointer;">
       <div class="rank-num">#${String(idx + 1).padStart(2, '0')}</div>
@@ -503,9 +476,7 @@ function renderBlogView() {
 
   grid.innerHTML = `
     <div class="blog-panel">
-      <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--basquiat-gold); text-transform:uppercase;">
-        Dispatch log
-      </div>
+      ${researchHtml}<hr style="border:0; border-top:1px solid var(--border-color); margin:28px 0;">
       <h1 style="font-size:1.55rem; font-weight:800; margin-top:6px;">${esc(blog.title)}</h1>
       <p style="color:var(--text-muted); margin-top:8px; font-size:0.92rem;">${esc(blog.summary)}</p>
       <hr style="border:none; border-top:1px solid var(--border-color); margin:20px 0;">
@@ -608,7 +579,7 @@ function cardHtml(item, why) {
   const marks = item.id === previewMarks?.itemId ? previewMarks.marks : LT.marksFor(item.id);
   const note = why || noteFor(item);
   const whyLine = whyHereFor(item);
-  const isRising = currentSort === 'trending' && trendingScore(item) >= 95;
+  const isRising = currentSort === 'trending' && trendingScore(item) >= 20;
   const profileMatch = userProfile && matchesProfile(item, userProfile);
 
   return `
@@ -622,7 +593,7 @@ function cardHtml(item, why) {
       <div class="card-meta">
         <div class="channel-avatar">${esc(item.authorAvatar || '🥍')}</div>
         <div class="card-info">
-          <div class="card-title">${esc(item.title)}</div>
+          <button type="button" class="card-title card-open" data-open="${esc(item.id)}">${esc(item.title)}</button>
           <div class="card-author-line">
             <span>${esc(item.author)}</span>
             <span>·</span>
@@ -636,10 +607,10 @@ function cardHtml(item, why) {
             <div class="vouch-quote">${esc(note)}</div>
             <div class="why-here-line">${esc(whyLine)}</div>
           </div>
-          <div style="margin-top:4px; display:flex; justify-content:flex-end; gap:8px;">
+          <div class="card-actions">
             <button type="button" data-practice="${esc(item.id)}" style="background:transparent; border:none; color:#a1a1aa; cursor:pointer; font-size:0.75rem; font-weight:700;">+ Practice</button>
             <button type="button" data-save="${esc(item.id)}" style="background:transparent; border:none; color:${isSaved ? '#f97316' : '#71717a'}; cursor:pointer; font-size:0.75rem; font-weight:700;">
-              ${isSaved ? '✓ Saved in Locker' : '+ Save to Locker'}
+              ${isSaved ? 'Saved' : '+ Locker'}
             </button>
           </div>
         </div>
@@ -664,8 +635,8 @@ function renderDispatch() {
   // Phase 2.6: If user has an onboarding profile, bias matching Dispatch items to the front
   if (userProfile && rows.length) {
     rows = rows.slice().sort((a, b) => {
-      const aMatch = matchesProfile(a.item, userProfile) ? 1 : 0;
-      const bMatch = matchesProfile(b.item, userProfile) ? 1 : 0;
+      const aMatch = profileScore(a.item, userProfile);
+      const bMatch = profileScore(b.item, userProfile);
       return bMatch - aMatch;
     });
   }
@@ -677,18 +648,18 @@ function renderDispatch() {
     return renderShelf('all');
   }
   document.getElementById('statsLine').innerText = `${rows.length} in the drop · ${CATALOG.length} on the shelf`;
-  grid.innerHTML = `
+  document.getElementById('specialLayerMount').innerHTML = `
     <div class="dispatch-intro dispatch-span">
       <div>
-        <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--basquiat-gold); text-transform:uppercase;">Today's drop</div>
         <h1>${esc(DISPATCH.title || 'Shelf Dispatch')}</h1>
         <p style="color:var(--text-muted); margin-top:4px;">${esc(DISPATCH.caption || '')}</p>
       </div>
       <button class="nav-btn" type="button" data-whole-shelf="1">Whole shelf</button>
     </div>
-    ${rows.map(row => cardHtml(row.item, row.why)).join('')}
   `;
+  grid.innerHTML = catalogPages(rows.map(row => cardHtml(row.item, row.why)));
 }
+
 
 function renderShelf(category) {
   const specialMount = document.getElementById('specialLayerMount');
@@ -715,7 +686,7 @@ function renderShelf(category) {
   }
 
   // Apply sorting (Trending/Rising, Most Marked/Saved, Action Clip Match, or Default + Profile bias)
-  if (searchQuery || currentSort === 'action') {
+  if (currentSort === 'action' || (searchQuery && currentSort === 'default')) {
     scored.sort((a, b) => b.qScore - a.qScore || b.tScore - a.tScore);
   } else if (currentSort === 'trending') {
     scored.sort((a, b) => b.tScore - a.tScore);
@@ -727,8 +698,8 @@ function renderShelf(category) {
     });
   } else if (userProfile) {
     scored.sort((a, b) => {
-      const aM = matchesProfile(a.item, userProfile) ? 1 : 0;
-      const bM = matchesProfile(b.item, userProfile) ? 1 : 0;
+      const aM = profileScore(a.item, userProfile);
+      const bM = profileScore(b.item, userProfile);
       return bM - aM;
     });
   }
@@ -743,9 +714,9 @@ function renderShelf(category) {
     return;
   }
   const posSuffix = currentPosition !== 'all' ? ` · Position: ${currentPosition}` : '';
-  const sortSuffix = currentSort === 'trending' ? ' · Sorted by Trending / Rising' : '';
+  const sortSuffix = currentSort === 'trending' ? ' · Rising: your recent saves & marks + Dispatch weight' : '';
   document.getElementById('statsLine').innerText = `Showing ${filtered.length} of ${CATALOG.length}${posSuffix}${sortSuffix}`;
-  grid.innerHTML = filtered.map(item => cardHtml(item)).join('');
+  grid.innerHTML = filtered.length ? catalogPages(filtered.map(item => cardHtml(item))) : '<div class="blog-panel dispatch-span"><h3>No matching films.</h3><p>Try a broader search or choose All Positions and All Sub-Topics.</p></div>';
 }
 
 function lockerRowHtml(item) {
@@ -754,7 +725,7 @@ function lockerRowHtml(item) {
   return `
     <div class="locker-row" data-id="${esc(item.id)}">
       <div class="locker-row-main">
-        <div class="card-title">${esc(item.title)}</div>
+        <button type="button" class="card-title card-open" data-open="${esc(item.id)}">${esc(item.title)}</button>
         <div class="card-author-line">
           ${esc(item.author)}
           ${first ? ' · ' + esc(LT.fmt(first.t)) : ''}
@@ -767,12 +738,48 @@ function lockerRowHtml(item) {
   `;
 }
 
+function catalogPages(cards) {
+  const pages = [];
+  for (let index = 0; index < cards.length; index += 4) {
+    pages.push(`<div class="catalog-page" role="group" aria-label="Films ${index + 1} to ${Math.min(index + 4, cards.length)}">${cards.slice(index, index + 4).join('')}</div>`);
+  }
+  return pages.join('');
+}
+
+function updateCatalogPager() {
+  const grid = document.getElementById('cardsGrid');
+  const pages = grid.querySelectorAll('.catalog-page');
+  const pager = document.getElementById('catalogPager');
+  const swipe = document.body.classList.contains('mobile-swipe') && matchMedia('(max-width: 768px)').matches;
+  pager.hidden = !swipe || !pages.length;
+  if (pager.hidden) return;
+  const width = pages[0].getBoundingClientRect().width + 12;
+  const index = Math.min(pages.length - 1, Math.round(grid.scrollLeft / width));
+  document.getElementById('catalogPageStatus').textContent = `${index + 1} / ${pages.length} · 4 films per swipe`;
+  document.getElementById('previousCatalogPage').disabled = index === 0;
+  document.getElementById('nextCatalogPage').disabled = index === pages.length - 1;
+}
+
 function renderView() {
+  for (const [selector, data, value] of [['.chip', 'category', currentCategory], ['.pos-pill', 'pos', currentPosition], ['.subtag-pill', 'sub', currentSubTag]]) {
+    document.querySelectorAll(selector).forEach(button => {
+      button.classList.toggle('active', button.dataset[data] === value);
+      button.setAttribute('aria-pressed', String(button.dataset[data] === value));
+    });
+  }
+  const savedButton = document.getElementById('savedToggleBtn');
+  savedButton.setAttribute('aria-pressed', String(savedOnly));
+  savedButton.style.borderColor = savedOnly ? 'var(--accent)' : 'var(--border-color)';
   updateProfileBadge();
-  if (currentCategory === 'blog') return renderBlogView();
-  if (currentCategory === 'trends') return renderTrendsView();
-  if (onDispatch()) return renderDispatch();
-  return renderShelf(currentCategory);
+  if (currentCategory === 'blog') renderBlogView();
+  else if (currentCategory === 'trends') renderTrendsView();
+  else if (onDispatch()) renderDispatch();
+  else renderShelf(currentCategory);
+  const grid = document.getElementById('cardsGrid');
+  grid.classList.toggle('film-results', !!grid.querySelector('.catalog-page'));
+  grid.scrollTop = 0;
+  grid.scrollLeft = 0;
+  updateCatalogPager();
 }
 
 function downloadJson(obj, filename) {
@@ -805,24 +812,26 @@ async function sharePacked(obj, urlForToken, filename, noteEl) {
 function stopClock() {
   if (clockTimer) clearInterval(clockTimer);
   clockTimer = 0;
-  playerPlaying = false;
+  clockSynced = false;
 }
 
 function playerMessage(iframe, payload) {
-  iframe?.contentWindow?.postMessage(JSON.stringify({
-    id: 'lt-player',
-    channel: 'widget',
-    ...payload
-  }), '*');
+  iframe?.contentWindow?.postMessage(JSON.stringify({ id: 'lt-player', channel: 'widget', ...payload }), 'https://www.youtube-nocookie.com');
 }
 
-function seekPlayerTo(seconds) {
-  const s = Math.max(0, Math.floor(Number(seconds) || 0));
-  clockT = s;
+function paintClock() {
   const clock = document.getElementById('mark-clock');
   if (clock) clock.textContent = LT.fmt(clockT);
   const at = document.getElementById('mark-at');
   if (at && markAt == null) at.textContent = LT.fmt(clockT);
+  const state = document.getElementById('clock-state');
+  if (state) state.textContent = clockSynced ? 'Synced to film' : 'Waiting for player · set time manually if needed';
+}
+
+function seekPlayerTo(seconds) {
+  const s = Math.min(28800, Math.max(0, Number(seconds) || 0));
+  clockT = s;
+  paintClock();
   const frame = document.getElementById('lt-player');
   if (frame) {
     playerMessage(frame, { event: 'command', func: 'seekTo', args: [s, true] });
@@ -831,42 +840,25 @@ function seekPlayerTo(seconds) {
 }
 
 function watchPlayer(iframe) {
+  stopClock();
   const ping = () => {
     playerMessage(iframe, { event: 'listening' });
     playerMessage(iframe, { event: 'command', func: 'addEventListener', args: ['onStateChange'] });
-    playerMessage(iframe, { event: 'command', func: 'playVideo', args: [] });
   };
-  iframe.addEventListener('load', ping);
-  stopClock();
-  clockTimer = setInterval(() => {
-    playerMessage(iframe, { event: 'listening' });
-    playerMessage(iframe, { event: 'command', func: 'getCurrentTime', args: [] });
-    if (playerPlaying) {
-      clockT += 0.5;
-      const clock = document.getElementById('mark-clock');
-      if (clock) clock.textContent = LT.fmt(clockT);
-      const at = document.getElementById('mark-at');
-      if (at && markAt == null) at.textContent = LT.fmt(clockT);
-    }
-  }, 500);
+  let loaded = false;
+  iframe.addEventListener('load', () => { loaded = true; ping(); });
+  clockTimer = setInterval(() => { if (loaded) playerMessage(iframe, { event: 'listening' }); }, 1000);
 }
 
 window.addEventListener('message', (event) => {
-  if (event.origin !== 'https://www.youtube-nocookie.com' && event.origin !== 'https://www.youtube.com') return;
-  let data = event.data;
-  if (typeof data === 'string') {
-    try { data = JSON.parse(data); } catch { return; }
-  }
-  if (typeof data?.info?.playerState === 'number') {
-    playerPlaying = data.info.playerState === 1;
-  }
-  const time = Number(data?.info?.currentTime);
-  if (!Number.isFinite(time)) return;
-  clockT = time;
-  const clock = document.getElementById('mark-clock');
-  if (clock) clock.textContent = LT.fmt(clockT);
-  const at = document.getElementById('mark-at');
-  if (at && markAt == null) at.textContent = LT.fmt(clockT);
+  const frame = document.getElementById('lt-player');
+  const data = LT_CLOCK.readMessage(event, frame);
+  if (!data) return;
+  if (data.ready) playerMessage(frame, { event: 'listening' });
+  if (data.time == null) return;
+  clockT = data.time;
+  clockSynced = true;
+  paintClock();
 });
 
 function marksNow(itemId) {
@@ -877,7 +869,10 @@ function marksNow(itemId) {
 function keepMarks(itemId, marks) {
   const clean = marks.map(LT.cleanMark).filter(Boolean).slice(0, 40);
   if (previewMarks?.itemId === itemId) previewMarks.marks = clean;
-  else LT.setMarks(itemId, clean);
+  else {
+    try { LT.setMarks(itemId, clean); }
+    catch (error) { document.getElementById('mark-status').textContent = error.message; return null; }
+  }
   paintMarks(itemId);
   renderView();
   return clean;
@@ -892,7 +887,7 @@ function paintMarks(itemId) {
     <div class="mark-row">
       <button type="button" class="mark-clock mark-clock-btn" data-seek-mark="${esc(mark.t)}" title="Jump video to ${esc(LT.fmt(mark.t))}">▶ ${esc(LT.fmt(mark.t))}</button>
       ${mark.skill ? `<span class="subtag-badge" style="position:static;">${esc(mark.skill)}</span>` : ''}
-      ${mark.by ? `<span class="coach-by-badge">Coach: ${esc(mark.by)}</span>` : ''}
+      ${mark.by ? `<span class="coach-by-badge">By ${esc(mark.by)}</span>` : ''}
       <span style="flex:1;">${esc(mark.text)}</span>
       <button class="nav-btn" type="button" data-to-practice="${index}">Add to practice</button>
       <button class="nav-btn" type="button" data-drop-mark="${index}">Remove</button>
@@ -910,15 +905,17 @@ function markForm(item) {
       <div class="mark-row" style="justify-content:space-between;">
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
           <span class="subtag-label" style="margin:0;">Film clock</span>
-          <span class="mark-clock" id="mark-clock" aria-live="polite" aria-label="Film time">${esc(LT.fmt(clockT))}</span>
+          <span class="mark-clock" id="mark-clock" aria-label="Film time">${esc(LT.fmt(clockT))}</span>
           <button class="btn-action" type="button" id="open-mark">Mark this moment</button>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button class="nav-btn" type="button" id="copy-marks">Copy marks link</button>
           <button class="nav-btn" type="button" id="print-film-marks">Print drill sheet</button>
-          <button class="btn-action" type="button" id="save-shared-marks" hidden>Keep these marks</button>
+          <button class="btn-action" type="button" id="save-shared-marks" hidden>Save marks into Locker</button>
         </div>
       </div>
+      <p id="clock-state" class="hint">Waiting for player · set time manually if needed</p>
+      <details class="manual-clock"><summary>Set timestamp manually</summary><label>Minutes:seconds <input id="manualMarkTime" inputmode="numeric" placeholder="1:23" maxlength="8"></label> <button type="button" class="nav-btn" id="setMarkTime">Use timestamp</button></details>
       <div id="mark-composer">
         <div class="mark-row">
           <span class="mark-clock" id="mark-at" title="Timestamp for new mark">${esc(LT.fmt(clockT))}</span>
@@ -926,7 +923,7 @@ function markForm(item) {
           <input class="mark-by" id="mark-by" maxlength="40" placeholder="Coach / By (opt.)" aria-label="Coach or player name">
           <button class="btn-action" type="button" id="add-mark">Save mark</button>
         </div>
-        <div class="skill-pills" aria-label="Skill">${skills}</div>
+        <details><summary>Optional skill tag</summary><div class="skill-pills" aria-label="Skill">${skills}</div></details>
       </div>
       <div id="mark-list"></div>
       <div class="mark-row">
@@ -955,14 +952,15 @@ function submitCurrentMark(itemId) {
     textEl?.focus();
     return false;
   }
-  keepMarks(itemId, marksNow(itemId).concat(mark));
+  if (marksNow(itemId).length >= 40) { status.textContent = 'Each film holds up to 40 marks. Remove a mark before adding another.'; return false; }
+  if (!keepMarks(itemId, marksNow(itemId).concat(mark))) return false;
   if (textEl) textEl.value = '';
   pendingSkill = '';
   document.querySelectorAll('[data-skill]').forEach(btn => btn.setAttribute('aria-pressed', 'false'));
   markAt = null;
   if (status) {
     status.textContent = previewMarks
-      ? `Mark added at ${LT.fmt(mark.t)}. Click "Keep these marks" to save them on this device.`
+      ? `Mark added at ${LT.fmt(mark.t)}. Click "Save marks into Locker" to save them on this device.`
       : `Mark saved at ${LT.fmt(mark.t)} in local marks.`;
   }
   return true;
@@ -1062,6 +1060,7 @@ function printFilmSheet(item) {
 function openItemModal(id, startSeconds) {
   const item = CATALOG.find(i => i.id === id);
   if (!item) return;
+  if (!document.getElementById('playerModal').classList.contains('active')) returnFocus = document.activeElement;
   currentModalItemId = item.id;
   const wrap = document.getElementById('modalVideoWrap');
   const body = document.getElementById('modalBody');
@@ -1092,11 +1091,12 @@ function openItemModal(id, startSeconds) {
   }
 
   body.innerHTML = `
+    ${markForm(item)}
     <h2 style="font-size:1.2rem; font-weight:800;">${esc(item.title)}</h2>
     <div style="color:var(--text-muted); font-size:0.84rem; margin-top:4px;">
       ${esc(item.author)} · ${esc(item.categoryLabel)} · ${esc(item.subTag || '')}
     </div>
-    <div style="margin-top:12px; background:#222227; border-left:3px solid var(--accent); padding:10px 14px; border-radius:4px;">
+    <div style="margin-top:12px; background:#222227; border:1px solid var(--border-color); padding:10px 14px; border-radius:4px;">
       <div style="font-size:0.7rem; text-transform:uppercase; color:var(--accent); font-weight:700;">Curator note</div>
       <p style="margin-top:3px; font-size:0.88rem;">${esc(noteFor(item))}</p>
       <p style="margin-top:4px; font-size:0.8rem; color:#34d399; font-weight:600;">${esc(whyHereFor(item))}</p>
@@ -1108,10 +1108,11 @@ function openItemModal(id, startSeconds) {
       <button class="nav-btn" type="button" data-modal-practice="${esc(item.id)}">+ Add to Practice Card</button>
       ${href ? `<a href="${esc(href)}" target="_blank" rel="noopener" class="btn-action btn-secondary">Open original</a>` : ''}
     </div>
-    ${markForm(item)}
   `;
   paintMarks(item.id);
   document.getElementById('playerModal').classList.add('active');
+  document.body.classList.add('film-open');
+  document.querySelector('.modal-close-btn').focus();
   const hash = location.hash.startsWith('#p=') || location.hash.startsWith('#m=') ? location.hash : '';
   history.replaceState(null, '', '/?watch=' + encodeURIComponent(item.id) + (start ? '&t=' + start : '') + hash);
 }
@@ -1122,6 +1123,8 @@ function closeModal() {
   currentModalItemId = null;
   document.getElementById('playerModal').classList.remove('active');
   document.getElementById('modalVideoWrap').innerHTML = '';
+  document.body.classList.remove('film-open');
+  if (returnFocus?.isConnected) returnFocus.focus();
   const hash = location.hash.startsWith('#p=') ? location.hash : '';
   if (location.search || location.hash.startsWith('#m=')) history.replaceState(null, '', '/' + hash);
 }
@@ -1151,7 +1154,7 @@ function handleCardContainerClick(event) {
     return;
   }
   const card = event.target.closest('[data-id]');
-  if (card && card.dataset.id) openItemModal(card.dataset.id);
+  if (card && card.dataset.id) openItemModal(card.dataset.id, card.dataset.start);
 }
 
 document.getElementById('cardsGrid').addEventListener('click', handleCardContainerClick);
@@ -1183,6 +1186,18 @@ document.getElementById('modalBody').addEventListener('click', async (event) => 
   if (skill) {
     pendingSkill = pendingSkill === skill.dataset.skill ? '' : skill.dataset.skill;
     document.querySelectorAll('[data-skill]').forEach(btn => btn.setAttribute('aria-pressed', String(btn.dataset.skill === pendingSkill)));
+    return;
+  }
+  if (event.target.id === 'setMarkTime') {
+    const value = document.getElementById('manualMarkTime').value.trim();
+    const match = value.match(/^(\d{1,3}):([0-5]\d)$/);
+    const time = match ? Number(match[1]) * 60 + Number(match[2]) : NaN;
+    const status = document.getElementById('mark-status');
+    if (!Number.isFinite(time) || time > 28800) { status.textContent = 'Use minutes:seconds, for example 1:23 (up to 480:00).'; return; }
+    markAt = time;
+    document.getElementById('mark-at').textContent = LT.fmt(markAt);
+    status.textContent = 'Timestamp set to ' + LT.fmt(markAt) + '. Write a note and save.';
+    document.getElementById('mark-text').focus();
     return;
   }
   if (event.target.id === 'open-mark') {
@@ -1245,12 +1260,19 @@ document.getElementById('modalBody').addEventListener('click', async (event) => 
     return;
   }
   if (event.target.id === 'save-shared-marks' && previewMarks?.itemId === itemId) {
-    LT.setMarks(itemId, previewMarks.marks);
-    previewMarks = null;
-    paintMarks(itemId);
-    renderView();
-    const status = document.getElementById('mark-status');
-    if (status) status.textContent = 'Marks saved on this device.';
+    try {
+      const merged = LT.mergeMarks(itemId, previewMarks.marks);
+      if (!savedIds.includes(itemId)) {
+        const next = savedIds.concat(itemId);
+        LT.saveLocal('lacrossetube_vault', next);
+        savedIds = next;
+        updateVaultCounter();
+      }
+      previewMarks = null;
+      paintMarks(itemId);
+      renderView();
+      document.getElementById('mark-status').textContent = `${merged.length} marks saved with this film in your Locker.`;
+    } catch (error) { document.getElementById('mark-status').textContent = error.message; }
   }
 });
 
@@ -1381,7 +1403,7 @@ document.querySelectorAll('.pos-pill').forEach(el => {
 
 document.getElementById('sortSelect')?.addEventListener('change', (e) => {
   currentSort = e.target.value;
-  if (currentCategory === 'dispatch' && currentSort !== 'default') {
+  if ((currentCategory === 'dispatch' && currentSort !== 'default') || ['blog', 'trends'].includes(currentCategory)) {
     currentCategory = 'all';
     document.querySelectorAll('.chip').forEach(el => el.classList.toggle('active', el.dataset.category === 'all'));
   }
@@ -1391,7 +1413,10 @@ document.getElementById('sortSelect')?.addEventListener('change', (e) => {
 document.getElementById('mobileLayoutBtn')?.addEventListener('click', () => {
   const isSwipe = document.body.classList.toggle('mobile-swipe');
   const btn = document.getElementById('mobileLayoutBtn');
-  if (btn) btn.textContent = isSwipe ? '↔ Swipe' : '⊞ 2×2';
+  btn.textContent = isSwipe ? 'Swipe pages' : '2×2 grid';
+  btn.setAttribute('aria-pressed', String(isSwipe));
+  try { localStorage.setItem('lacrossetube_layout', isSwipe ? 'swipe' : 'grid'); } catch {}
+  updateCatalogPager();
 });
 
 document.querySelectorAll('[data-action-q]').forEach(btn => {
@@ -1414,7 +1439,8 @@ function readQuizSelections() {
   return {
     position: getVal('position'),
     focus: getVal('focus'),
-    format: getVal('format')
+    format: getVal('format'),
+    answers: readAssessmentAnswers()
   };
 }
 
@@ -1424,12 +1450,13 @@ document.querySelectorAll('.quiz-options').forEach(group => {
     if (!opt) return;
     group.querySelectorAll('.quiz-opt').forEach(b => b.classList.remove('active'));
     opt.classList.add('active');
+    group.querySelectorAll('.quiz-opt').forEach(b => b.setAttribute('aria-pressed', String(b === opt)));
   });
 });
 
 document.getElementById('onboardingBtn')?.addEventListener('click', () => {
   const panel = document.getElementById('onboardingPanel');
-  if (panel) panel.hidden = !panel.hidden;
+  if (panel) { panel.hidden = !panel.hidden; if (!panel.hidden) { restoreQuiz(); panel.scrollIntoView({ block: 'start' }); } }
 });
 
 document.getElementById('skipOnboardingBtn')?.addEventListener('click', () => {
@@ -1440,12 +1467,12 @@ document.getElementById('skipOnboardingBtn')?.addEventListener('click', () => {
 
 function applyProfileSetup(buildStarterPractice) {
   const sel = readQuizSelections();
-  userProfile = LT.saveProfile(sel);
+  try { userProfile = LT.saveProfile(sel); } catch (error) { document.getElementById('setupStatus').textContent = error.message; return; }
   const panel = document.getElementById('onboardingPanel');
   if (panel) panel.hidden = true;
 
   if (buildStarterPractice) {
-    const matching = CATALOG.filter(item => item.type === 'video' && matchesProfile(item, userProfile)).slice(0, 3);
+    const matching = CATALOG.filter(item => item.type === 'video' && profileScore(item, userProfile) > 0).sort((a, b) => profileScore(b, userProfile) - profileScore(a, userProfile)).slice(0, 3);
     if (matching.length) {
       const steps = matching.map(item => ({
         itemId: item.id,
@@ -1469,6 +1496,9 @@ document.getElementById('resetOnboardingBtn')?.addEventListener('click', () => {
   localStorage.removeItem('lacrossetube_quiz_skipped');
   currentPosition = 'all';
   document.querySelectorAll('.pos-pill').forEach(el => el.classList.toggle('active', el.dataset.pos === 'all'));
+  document.querySelectorAll('#assessmentQuestions input').forEach(input => { input.checked = false; });
+  document.getElementById('assessmentResults').textContent = '';
+  restoreQuiz();
   const panel = document.getElementById('onboardingPanel');
   if (panel) panel.hidden = true;
   renderView();
@@ -1478,7 +1508,7 @@ document.getElementById('resetOnboardingBtn')?.addEventListener('click', () => {
 async function runShelfAssistant(questionText) {
   const area = document.getElementById('aiResponseArea');
   if (!area || !window.LT_AI) return;
-  area.innerHTML = '<p class="hint">Scanning 511 shelf items, Dispatch &amp; your Locker…</p>';
+  area.innerHTML = '<p class="hint">Searching the shelf, Dispatch &amp; your Locker…</p>';
   const res = await window.LT_AI.askShelf(questionText, {
     catalog: CATALOG,
     dispatch: DISPATCH,
@@ -1503,7 +1533,7 @@ async function runShelfAssistant(questionText) {
   `).join('');
 
   area.innerHTML = `
-    <div style="background:#18181f; border-left:3px solid var(--accent); padding:10px 12px; border-radius:6px;">
+    <div style="background:#18181f; border:1px solid var(--border-color); padding:10px 12px; border-radius:6px;">
       <div style="font-size:0.83rem; line-height:1.45;">${esc(res.coachingLine).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>')}</div>
       ${notesHtml}
     </div>
@@ -1572,6 +1602,79 @@ document.getElementById('cardsGrid').addEventListener('error', (event) => {
   if (fallback && img.src !== fallback) img.src = fallback;
 }, true);
 
+function readAssessmentAnswers() {
+  const answers = {};
+  document.querySelectorAll('#assessmentQuestions input:checked').forEach(input => { answers[input.name] = Number(input.value); });
+  return answers;
+}
+
+function restoreQuiz() {
+  const profile = userProfile || { position: 'attack', focus: 'slides', format: 'both', answers: {} };
+  document.querySelectorAll('.quiz-options').forEach(group => {
+    group.querySelectorAll('.quiz-opt').forEach(button => {
+      const active = button.dataset.val === profile[group.dataset.quiz];
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+  });
+  document.querySelectorAll('#assessmentQuestions input').forEach(input => {
+    input.checked = profile.answers?.[input.name] === Number(input.value);
+  });
+}
+
+function showAssessmentResults() {
+  const result = LT_ASSESSMENT.evaluate(readAssessmentAnswers());
+  document.getElementById('assessmentResults').innerHTML = result.answered
+    ? `<p>${result.correct} of ${result.answered} answered correctly. ${result.priorities.length ? 'Your starter practice will include the topics below.' : 'Keep building with your chosen focus.'}</p>${result.results.map(row => `<p><strong>${row.correct ? 'Good read' : 'Review'}:</strong> ${esc(row.cue)} <button type="button" class="text-link" data-assessment-query="${esc(row.query)}">Find related film</button></p>`).join('')}`
+    : '<p>Choose an answer to any question, or skip the check and apply your setup.</p>';
+}
+
+document.getElementById('assessmentQuestions').innerHTML = LT_ASSESSMENT.QUESTIONS.map(question => `<fieldset><legend>${esc(question.title)}</legend>${question.options.map((option, index) => `<label><input type="radio" name="${question.id}" value="${index}"> ${esc(option)}</label>`).join('')}</fieldset>`).join('');
+document.getElementById('checkAssessment').addEventListener('click', showAssessmentResults);
+document.getElementById('assessmentResults').addEventListener('click', event => {
+  const button = event.target.closest('[data-assessment-query]');
+  if (!button) return;
+  document.getElementById('searchInput').value = button.dataset.assessmentQuery;
+  document.getElementById('onboardingPanel').hidden = true;
+  currentCategory = 'all';
+  currentPosition = 'all';
+  currentSubTag = 'all';
+  searchQuery = button.dataset.assessmentQuery;
+  document.querySelectorAll('.chip').forEach(el => el.classList.toggle('active', el.dataset.category === 'all'));
+  document.querySelectorAll('.pos-pill').forEach(el => el.classList.toggle('active', el.dataset.pos === 'all'));
+  renderView();
+});
+restoreQuiz();
+
+try {
+  if (localStorage.getItem('lacrossetube_layout') !== 'grid') {
+    document.body.classList.add('mobile-swipe');
+    document.getElementById('mobileLayoutBtn').textContent = 'Swipe pages';
+    document.getElementById('mobileLayoutBtn').setAttribute('aria-pressed', 'true');
+  }
+} catch {}
+document.getElementById('cardsGrid').addEventListener('scroll', updateCatalogPager, { passive: true });
+for (const [id, direction] of [['previousCatalogPage', -1], ['nextCatalogPage', 1]]) {
+  document.getElementById(id).addEventListener('click', () => {
+    const grid = document.getElementById('cardsGrid');
+    const width = grid.querySelector('.catalog-page')?.getBoundingClientRect().width || grid.clientWidth;
+    grid.scrollBy({ left: direction * (width + 12), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  });
+}
+new ResizeObserver(entries => {
+  const height = entries[0].target.getBoundingClientRect().height;
+  document.documentElement.style.setProperty('--header-height', height + 'px');
+  updateCatalogPager();
+}).observe(document.querySelector('header'));
+window.addEventListener('resize', updateCatalogPager);
+document.getElementById('playerModal').addEventListener('keydown', event => {
+  if (event.key !== 'Tab') return;
+  const nodes = [...event.currentTarget.querySelectorAll('button, a, input, summary, iframe')].filter(node => !node.disabled && node.getClientRects().length);
+  const first = nodes[0], last = nodes[nodes.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+  if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+});
+
 updateVaultCounter();
 renderPractice();
 renderView();
@@ -1579,10 +1682,10 @@ renderView();
 fetch('/data/dispatch.json').then(response => response.ok ? response.json() : null).then(data => {
   DISPATCH = data;
   dispatchReady = true;
-  if (onDispatch()) renderView();
+  renderView();
 }).catch(() => {
   dispatchReady = true;
-  if (onDispatch()) renderView();
+  renderView();
 });
 
 function handleSharedHashAndUrl() {

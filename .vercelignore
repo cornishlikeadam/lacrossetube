@@ -1,0 +1,13 @@
+.github/
+.playwright-cli/
+output/
+tests/
+scripts/
+vibe-coding/
+build/
+README.md
+daily_6pm_curator.py
+__pycache__/
+*.pyc
+.env
+.env.*

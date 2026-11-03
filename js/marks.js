@@ -28,7 +28,7 @@
 
   function cleanId(id) {
     const value = String(id || '');
-    return /^[\w-]{1,80}$/.test(value) ? value : '';
+    return /^[\w-]{1,80}$/.test(value) && !['__proto__', 'constructor', 'prototype'].includes(value) ? value : '';
   }
 
   function cleanPractice(raw) {
@@ -73,7 +73,28 @@
   }
 
   function writeMarkMap(map) {
-    store()?.setItem(MARKS_KEY, JSON.stringify(map));
+    saveLocal(MARKS_KEY, map);
+  }
+
+  function saveLocal(key, value) {
+    try {
+      const storage = store();
+      if (!storage) throw new Error('Storage unavailable');
+      storage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch {
+      throw new Error('This browser could not save on this device. Enable site storage or copy a sharing link before leaving.');
+    }
+  }
+
+  function mergeMarks(itemId, incoming) {
+    const marks = marksFor(itemId);
+    const same = (a, b) => a.t === b.t && a.text === b.text && a.skill === b.skill && (a.by || '') === (b.by || '');
+    for (const mark of incoming.map(cleanMark).filter(Boolean)) {
+      if (!marks.some(saved => same(saved, mark))) marks.push(mark);
+    }
+    if (marks.length > MAX_MARKS) throw new Error('These notes exceed the 40-mark limit. Remove some marks before importing.');
+    return setMarks(itemId, marks);
   }
 
   function marksFor(itemId) {
@@ -106,7 +127,7 @@
 
   function savePractice(practice) {
     const clean = cleanPractice(practice) || { v: 1, title: 'Practice', steps: [] };
-    store()?.setItem(PRACTICE_KEY, JSON.stringify(clean));
+    saveLocal(PRACTICE_KEY, clean);
     return clean;
   }
 
@@ -118,6 +139,7 @@
         position: String(raw.position || 'all').slice(0, 30),
         focus: String(raw.focus || 'all').slice(0, 40),
         format: String(raw.format || 'both').slice(0, 20),
+        answers: cleanAnswers(raw.answers),
         completedAt: Number(raw.completedAt) || Date.now()
       };
     } catch {
@@ -134,10 +156,19 @@
       position: String(profile.position || 'all').slice(0, 30),
       focus: String(profile.focus || 'all').slice(0, 40),
       format: String(profile.format || 'both').slice(0, 20),
+      answers: cleanAnswers(profile.answers),
       completedAt: Date.now()
     };
-    store()?.setItem(PROFILE_KEY, JSON.stringify(clean));
+    saveLocal(PROFILE_KEY, clean);
     return clean;
+  }
+
+  function cleanAnswers(raw) {
+    const out = {};
+    for (const id of ['recovery', 'hands', 'space', 'pocket']) {
+      if (Number.isInteger(raw?.[id]) && raw[id] >= 0 && raw[id] <= 2) out[id] = raw[id];
+    }
+    return out;
   }
 
   const enc = bytes => {
@@ -148,7 +179,22 @@
   const dec = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
 
   async function through(bytes, Stream) {
-    return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new Stream('deflate-raw'))).arrayBuffer());
+    const reader = new Blob([bytes]).stream().pipeThrough(new Stream('deflate-raw')).getReader();
+    const chunks = [];
+    let size = 0;
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > 100000) { await reader.cancel(); throw new Error('The link is too large.'); }
+        chunks.push(value);
+      }
+    } finally { reader.releaseLock(); }
+    const result = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.byteLength; }
+    return result;
   }
 
   async function pack(obj) {
@@ -165,6 +211,8 @@
 
   async function unpack(token) {
     if (typeof token !== 'string' || token.length < 2 || token.length > MAX_PACK) throw new Error('The link is empty or too long.');
+    if (!/^[zj][A-Za-z0-9_-]+$/.test(token)) throw new Error('Invalid sharing link.');
+    if (token[0] === 'z' && typeof DecompressionStream !== 'function') throw new Error('Open this link in a browser that supports compressed links.');
     const bytes = dec(token.slice(1));
     const raw = token[0] === 'z' && typeof DecompressionStream === 'function'
       ? await through(bytes, DecompressionStream)
@@ -175,7 +223,7 @@
   }
 
   async function readHash(input) {
-    const match = String(input || '').match(/#([mp])=([A-Za-z0-9_-]+)/);
+    const match = String(input || '').match(/^#([mp])=([A-Za-z0-9_-]+)$/);
     if (!match) return null;
     try {
       const data = await unpack(match[2]);
@@ -198,7 +246,7 @@
 
   globalThis.LT = {
     SKILLS, MAX_STEPS, MAX_TEXT, MAX_BY, cleanMark, cleanPractice, cleanSharedMarks,
-    loadMarkMap, marksFor, allMarksCount, setMarks, loadPractice, savePractice,
-    loadProfile, saveProfile, pack, unpack, readHash, fmt
+    loadMarkMap, marksFor, allMarksCount, setMarks, mergeMarks, loadPractice, savePractice,
+    loadProfile, saveProfile, saveLocal, pack, unpack, readHash, fmt
   };
 })();

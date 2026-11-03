@@ -406,13 +406,6 @@ async function sharePacked(obj, urlForToken, filename, noteEl) {
   }
 }
 
-function ensureSaved(id) {
-  if (!id || savedIds.includes(id)) return;
-  savedIds.push(id);
-  localStorage.setItem('lacrossetube_vault', JSON.stringify(savedIds));
-  updateVaultCounter();
-}
-
 function stopClock() {
   if (clockTimer) clearInterval(clockTimer);
   clockTimer = 0;
@@ -461,10 +454,7 @@ function marksNow(itemId) {
 function keepMarks(itemId, marks) {
   const clean = marks.map(LT.cleanMark).filter(Boolean).slice(0, 40);
   if (previewMarks?.itemId === itemId) previewMarks.marks = clean;
-  else {
-    LT.setMarks(itemId, clean);
-    if (clean.length) ensureSaved(itemId);
-  }
+  else LT.setMarks(itemId, clean);
   paintMarks(itemId);
   return clean;
 }
@@ -502,7 +492,7 @@ function markForm(item) {
       <div id="mark-list"></div>
       <div class="mark-row">
         <button class="nav-btn" type="button" id="copy-marks">Copy marks link</button>
-        <button class="btn-action" type="button" id="save-shared-marks" hidden>Save marks into Locker</button>
+        <button class="btn-action" type="button" id="save-shared-marks" hidden>Keep these marks</button>
         <span id="mark-status" role="status" style="color:var(--text-muted); font-size:0.8rem;"></span>
       </div>
     </div>
@@ -680,7 +670,7 @@ document.getElementById('modalBody').addEventListener('click', async (event) => 
     }
     keepMarks(itemId, marksNow(itemId).concat(mark));
     document.getElementById('mark-text').value = '';
-    if (status) status.textContent = previewMarks ? 'Mark added. Save into Locker when you want to keep it on this device.' : 'Saved in the Locker.';
+    if (status) status.textContent = previewMarks ? 'Mark added. Keep these marks to save them on this device.' : 'Mark saved on this device.';
     return;
   }
   const drop = event.target.closest('[data-drop-mark]');
@@ -719,11 +709,10 @@ document.getElementById('modalBody').addEventListener('click', async (event) => 
   }
   if (event.target.id === 'save-shared-marks' && previewMarks?.itemId === itemId) {
     LT.setMarks(itemId, previewMarks.marks);
-    ensureSaved(itemId);
     previewMarks = null;
     paintMarks(itemId);
     const status = document.getElementById('mark-status');
-    if (status) status.textContent = 'Saved in the Locker.';
+    if (status) status.textContent = 'Marks saved on this device.';
   }
 });
 

@@ -39,17 +39,33 @@ function ytId(value) {
   return /^[A-Za-z0-9_-]{11}$/.test(value || '') ? value : '';
 }
 
+const META_LABEL = /still frame|still verified|halfway|hq2|karpathy|clickbait|50%\s*midpoint/i;
+
 function badgeFor(item) {
-  if (item.badge) return item.badge;
-  if (item.type === 'video') return '50% Still Frame';
+  const badge = String(item.badge || '');
+  if (badge && !META_LABEL.test(badge)) return badge;
+  if (item.type === 'video') return '';
   if (item.type === 'archive') return 'Archive scan';
   const href = item.pdfUrl || item.url || '';
   if (item.type === 'playbook' && /\.pdf($|\?)/i.test(href)) return 'PDF';
   return 'Source page';
 }
 
+function shownTime(item) {
+  const duration = String(item.duration || '');
+  return META_LABEL.test(duration) ? '' : duration;
+}
+
 function noteFor(item) {
-  return item.curatorNote || item.vouchQuote || '';
+  return String(item.curatorNote || item.vouchQuote || '')
+    .replace(/\s*The still is the halfway frame, not a cover thumbnail\.?/gi, '')
+    .replace(/\bhalfway frames?\b[^.]*/gi, '')
+    .replace(/\bhq2\.jpg\b/gi, '')
+    .replace(/\b50%\s*(still frames?|midpoint[^.]*|still verified)\b/gi, '')
+    .replace(/\bkarpathy\b[^.]*/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,])/g, '$1')
+    .trim();
 }
 
 function thumbHtml(item) {
@@ -137,12 +153,12 @@ function renderBlogView() {
       <div style="flex:1;">
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <span style="font-weight:700; font-size:0.98rem; color:#fff;">${esc(item.title)}</span>
-          <span style="font-size:0.7rem; background:#27272a; color:#fb923c; padding:2px 7px; border-radius:4px; font-weight:700;">${esc(badgeFor(item))}</span>
+          ${badgeFor(item) ? `<span style="font-size:0.7rem; background:#27272a; color:#fb923c; padding:2px 7px; border-radius:4px; font-weight:700;">${esc(badgeFor(item))}</span>` : ''}
         </div>
         <div style="font-size:0.8rem; color:var(--text-muted); margin-top:3px;">
           ${esc(item.author)} · ${esc(item.categoryLabel)} (${esc(item.subTag || '')})
         </div>
-        <div style="font-size:0.82rem; color:#d4d4d8; font-style:italic; margin-top:6px;">"${esc(noteFor(item))}"</div>
+        ${noteFor(item) ? `<div style="font-size:0.82rem; color:#d4d4d8; font-style:italic; margin-top:6px;">"${esc(noteFor(item))}"</div>` : ''}
       </div>
     </div>
   `).join('');
@@ -150,7 +166,7 @@ function renderBlogView() {
   grid.innerHTML = `
     <div class="blog-panel">
       <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--basquiat-gold); text-transform:uppercase;">
-        [ST-100 DISPATCH]
+        Dispatch log
       </div>
       <h1 style="font-size:1.55rem; font-weight:800; margin-top:6px;">${esc(blog.title)}</h1>
       <p style="color:var(--text-muted); margin-top:8px; font-size:0.92rem;">${esc(blog.summary)}</p>
@@ -225,7 +241,7 @@ function renderTrendsView() {
   grid.innerHTML = `
     <div class="blog-panel">
       <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:#ec4899; text-transform:uppercase;">
-        [ST-100 RADAR]
+        Trend radar
       </div>
       <h1 style="font-size:1.5rem; font-weight:800; margin-top:6px;">Lacrosse trend radar</h1>
       <p style="color:var(--text-muted); margin-top:6px; font-size:0.9rem;">
@@ -256,9 +272,9 @@ function cardHtml(item, why) {
     <div class="card" data-id="${esc(item.id)}">
       <div class="thumbnail-box">
         ${thumbHtml(item)}
-        <div class="midpoint-indicator">${esc(badge)}</div>
+        ${badge ? `<div class="midpoint-indicator">${esc(badge)}</div>` : ''}
         ${item.subTag ? `<div class="subtag-badge">${esc(item.subTag)}</div>` : ''}
-        <div class="duration-badge ${item.type === 'video' ? '' : 'badge-playbook'}">${esc(item.duration || badge)}</div>
+        ${(shownTime(item) || badge) ? `<div class="duration-badge ${item.type === 'video' ? '' : 'badge-playbook'}">${esc(shownTime(item) || badge)}</div>` : ''}
       </div>
       <div class="card-meta">
         <div class="channel-avatar">${esc(item.authorAvatar || '🥍')}</div>
@@ -309,7 +325,7 @@ function renderDispatch() {
   grid.innerHTML = `
     <div class="dispatch-intro dispatch-span">
       <div>
-        <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--basquiat-gold); text-transform:uppercase;">[ST-100 DISPATCH]</div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--basquiat-gold); text-transform:uppercase;">Today's drop</div>
         <h1>${esc(DISPATCH.title || 'Shelf Dispatch')}</h1>
         <p style="color:var(--text-muted); margin-top:4px;">${esc(DISPATCH.caption || '')}</p>
       </div>
@@ -329,8 +345,34 @@ function renderShelf(category) {
     const matchesSaved = !savedOnly || savedIds.includes(item.id);
     return matchesCat && matchesSub && matchesSearch && matchesSaved;
   });
-  document.getElementById('statsLine').innerText = `Showing ${filtered.length} of ${CATALOG.length} · halfway frames on every video`;
+  if (savedOnly) {
+    document.getElementById('statsLine').innerText = filtered.length ? `${filtered.length} in the Locker` : 'The Locker is empty';
+    grid.innerHTML = filtered.length
+      ? filtered.map(lockerRowHtml).join('')
+      : '<div class="blog-panel dispatch-span"><h3>Nothing in the Locker yet.</h3><p>Save a film and it stays on this device.</p></div>';
+    return;
+  }
+  document.getElementById('statsLine').innerText = `Showing ${filtered.length} of ${CATALOG.length}`;
   grid.innerHTML = filtered.map(item => cardHtml(item)).join('');
+}
+
+function lockerRowHtml(item) {
+  const marks = item.id === previewMarks?.itemId ? previewMarks.marks : LT.marksFor(item.id);
+  const first = marks[0];
+  return `
+    <div class="locker-row" data-id="${esc(item.id)}">
+      <div class="locker-row-main">
+        <div class="card-title">${esc(item.title)}</div>
+        <div class="card-author-line">
+          ${esc(item.author)}
+          ${first ? ' · ' + esc(LT.fmt(first.t)) : ''}
+          ${marks.length ? ' · ' + marks.length + (marks.length === 1 ? ' mark' : ' marks') : ''}
+        </div>
+      </div>
+      <button class="nav-btn" type="button" data-practice="${esc(item.id)}">Add to practice</button>
+      <button class="nav-btn" type="button" data-save="${esc(item.id)}">Remove</button>
+    </div>
+  `;
 }
 
 function renderView() {
@@ -338,6 +380,30 @@ function renderView() {
   if (currentCategory === 'trends') return renderTrendsView();
   if (onDispatch()) return renderDispatch();
   return renderShelf(currentCategory);
+}
+
+function downloadJson(obj, filename) {
+  const href = URL.createObjectURL(new Blob([JSON.stringify(obj)], { type: 'application/json' }));
+  const link = document.createElement('a');
+  link.href = href;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(href);
+}
+
+async function sharePacked(obj, urlForToken, filename, noteEl) {
+  try {
+    const token = await LT.pack(obj);
+    await navigator.clipboard.writeText(urlForToken(token));
+    if (noteEl) noteEl.textContent = 'Link copied.';
+  } catch (error) {
+    if (/too long/i.test(error?.message || '')) {
+      downloadJson(obj, filename);
+      if (noteEl) noteEl.textContent = 'Too long for a link. A file downloaded instead. Open it with Open file.';
+      return;
+    }
+    if (noteEl) noteEl.textContent = error?.message || 'Could not copy the link.';
+  }
 }
 
 function ensureSaved(id) {
@@ -352,19 +418,25 @@ function stopClock() {
   clockTimer = 0;
 }
 
+function playerMessage(iframe, payload) {
+  iframe.contentWindow?.postMessage(JSON.stringify({
+    id: 'lt-player',
+    channel: 'widget',
+    ...payload
+  }), '*');
+}
+
 function watchPlayer(iframe) {
   const ping = () => {
-    const win = iframe.contentWindow;
-    if (!win) return;
-    win.postMessage(JSON.stringify({ event: 'listening', id: 'lt-player', channel: 'widget' }), '*');
-    win.postMessage(JSON.stringify({ event: 'command', func: 'addEventListener', args: ['onStateChange'] }), '*');
+    playerMessage(iframe, { event: 'listening' });
+    playerMessage(iframe, { event: 'command', func: 'addEventListener', args: ['onStateChange'] });
+    playerMessage(iframe, { event: 'command', func: 'playVideo', args: [] });
   };
   iframe.addEventListener('load', ping);
   stopClock();
   clockTimer = setInterval(() => {
-    iframe.contentWindow?.postMessage(JSON.stringify({
-      event: 'command', func: 'getCurrentTime', args: []
-    }), '*');
+    playerMessage(iframe, { event: 'listening' });
+    playerMessage(iframe, { event: 'command', func: 'getCurrentTime', args: [] });
   }, 500);
 }
 
@@ -374,8 +446,8 @@ window.addEventListener('message', (event) => {
   if (typeof data === 'string') {
     try { data = JSON.parse(data); } catch { return; }
   }
-  const time = data?.info?.currentTime;
-  if (typeof time !== 'number' || !Number.isFinite(time)) return;
+  const time = Number(data?.info?.currentTime);
+  if (!Number.isFinite(time)) return;
   clockT = time;
   const clock = document.getElementById('mark-clock');
   if (clock) clock.textContent = LT.fmt(clockT);
@@ -407,7 +479,7 @@ function paintMarks(itemId) {
       <span class="mark-clock">${esc(LT.fmt(mark.t))}</span>
       ${mark.skill ? `<span class="subtag-badge" style="position:static;">${esc(mark.skill)}</span>` : ''}
       <span style="flex:1;">${esc(mark.text)}</span>
-      <button class="nav-btn" type="button" data-to-practice="${index}">Practice</button>
+      <button class="nav-btn" type="button" data-to-practice="${index}">Add to practice</button>
       <button class="nav-btn" type="button" data-drop-mark="${index}">Remove</button>
     </div>
   `).join('') || '<p style="color:var(--text-muted); margin-top:8px;">No marks on this film yet.</p>';
@@ -422,9 +494,9 @@ function markForm(item) {
     <div style="margin-top:16px;">
       <div style="font-size:0.7rem; text-transform:uppercase; color:var(--accent); font-weight:700;">Mark this moment</div>
       <div class="mark-row">
-        <span class="mark-clock" id="mark-clock">${esc(LT.fmt(clockT))}</span>
-        <input class="mark-text" id="mark-text" maxlength="160" placeholder="What should a player do here?" aria-label="Note at this moment">
-        <button class="btn-action" type="button" id="add-mark">Mark</button>
+        <span class="mark-clock" id="mark-clock" aria-live="polite" aria-label="Film time">${esc(LT.fmt(clockT))}</span>
+        <input class="mark-text" id="mark-text" maxlength="160" placeholder="Short note for this moment" aria-label="Note at this moment">
+        <button class="btn-action" type="button" id="add-mark">Mark this moment</button>
       </div>
       <div class="skill-pills" aria-label="Skill">${skills}</div>
       <div id="mark-list"></div>
@@ -495,7 +567,7 @@ function fillPracticeSheet() {
     const href = item ? `${location.origin}/?watch=${encodeURIComponent(item.id)}&t=${seconds}` : '';
     return `<li><b>${esc(LT.fmt(step.t))}</b> ${esc(step.why || item?.title || '')}<br>${esc(item?.title || '')}${item?.author ? ' · ' + esc(item.author) : ''}${href ? `<br><a href="${esc(href)}">${esc(href)}</a>` : ''}</li>`;
   }).join('');
-  sheet.innerHTML = `<h1>${esc(practice.title)}</h1><ol>${steps}</ol><p>LacrosseTube practice card. Halfway frames stay on the shelf.</p>`;
+  sheet.innerHTML = `<h1>${esc(practice.title)}</h1><ol>${steps}</ol><p>LacrosseTube practice card.</p>`;
 }
 
 function openItemModal(id, startSeconds) {
@@ -631,14 +703,18 @@ document.getElementById('modalBody').addEventListener('click', async (event) => 
   }
   if (event.target.id === 'copy-marks') {
     const status = document.getElementById('mark-status');
-    try {
-      const token = await LT.pack({ v: 1, itemId, marks: marksNow(itemId) });
-      const url = `${location.origin}/?watch=${encodeURIComponent(itemId)}#m=${token}`;
-      await navigator.clipboard.writeText(url);
-      if (status) status.textContent = 'Marks link copied.';
-    } catch (error) {
-      if (status) status.textContent = error.message || 'Could not copy the link.';
+    const marks = marksNow(itemId);
+    if (!marks.length) {
+      if (status) status.textContent = 'Add a mark before copying a link.';
+      return;
     }
+    await sharePacked(
+      { v: 1, itemId, marks },
+      token => `${location.origin}/?watch=${encodeURIComponent(itemId)}#m=${token}`,
+      'lacrossetube-marks.json',
+      status
+    );
+    if (status && status.textContent === 'Link copied.') status.textContent = 'Marks link copied.';
     return;
   }
   if (event.target.id === 'save-shared-marks' && previewMarks?.itemId === itemId) {
@@ -696,13 +772,47 @@ document.getElementById('practicePrint').addEventListener('click', () => {
 
 document.getElementById('practiceCopy').addEventListener('click', async () => {
   const note = document.getElementById('practiceNote');
-  try {
-    const token = await LT.pack(activePractice());
-    await navigator.clipboard.writeText(`${location.origin}/#p=${token}`);
-    note.textContent = 'Practice link copied.';
-  } catch (error) {
-    note.textContent = error.message || 'Could not copy the link.';
+  const practice = activePractice();
+  if (!practice.steps.length) {
+    note.textContent = 'Add a step before copying a link.';
+    return;
   }
+  await sharePacked(
+    practice,
+    token => `${location.origin}/#p=${token}`,
+    'lacrossetube-practice.json',
+    note
+  );
+  if (note.textContent === 'Link copied.') note.textContent = 'Practice link copied.';
+});
+
+document.getElementById('sharedFile').addEventListener('change', async (event) => {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = '';
+  const note = document.getElementById('practiceNote');
+  if (!file) return;
+  let data;
+  try { data = JSON.parse(await file.text()); }
+  catch {
+    note.textContent = 'That file is not a marks list or a practice card.';
+    document.getElementById('practiceBar').hidden = false;
+    return;
+  }
+  const marks = LT.cleanSharedMarks(data);
+  if (marks && marks.marks.length) {
+    previewMarks = marks;
+    openItemModal(marks.itemId, marks.marks[0].t || 0);
+    return;
+  }
+  const practice = LT.cleanPractice(data);
+  if (practice && practice.steps.length) {
+    previewPractice = practice;
+    renderPractice();
+    note.textContent = 'Practice loaded. Save into Locker to keep it on this device.';
+    return;
+  }
+  note.textContent = 'That file is not a marks list or a practice card.';
+  document.getElementById('practiceBar').hidden = false;
 });
 
 document.getElementById('practiceSave').addEventListener('click', () => {

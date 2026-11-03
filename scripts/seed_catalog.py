@@ -91,7 +91,7 @@ AVATAR = {
     "shelf": "📑",
 }
 NOTES = {
-    "games": "Game film from {author}. The still is the halfway frame, not a cover thumbnail.",
+    "games": "Game film from {author}.",
     "tips": "Skill clip from {author}.",
     "interviews": "Conversation from {author}.",
     "business": "Business-of-the-game clip from {author}.",
@@ -319,7 +319,7 @@ def main() -> None:
             "categoryLabel": LABELS[shelf],
             "subTag": slot["sub"],
             "duration": slot["dur"],
-            "badge": "50% Still Frame",
+            "badge": "",
             "midpointStill": f"https://i.ytimg.com/vi/{vid}/hq2.jpg",
             "fallbackStill": f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg",
             "title": meta["title"],

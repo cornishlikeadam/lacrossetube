@@ -454,13 +454,13 @@ def scrape_reddit_and_community_videos(target_count: int = 24) -> tuple[List[Dic
             "category": cls["category"],
             "categoryLabel": cls["categoryLabel"],
             "subTag": cls["subTag"],
-            "duration": "50% Still Verified",
+            "duration": "",
             "midpointStill": meta["midpoint_still"],
             "fallbackStill": meta["fallback_still"],
             "title": meta["title"],
             "author": meta["author"],
             "authorAvatar": cls["avatar"],
-            "badge": "50% Still Frame",
+            "badge": "",
             "sourceHub": item["sourceHub"],
             "curatorNote": quote,
             "vouchQuote": quote,
@@ -483,7 +483,7 @@ def scrape_reddit_and_community_videos(target_count: int = 24) -> tuple[List[Dic
             break
 
     discovered_channels = sorted(channel_counter.values(), key=lambda x: x["curatedVideosCount"], reverse=True)
-    print(f"   ✓ Verified {len(verified_items)} live YouTube lacrosse videos via oEmbed (`hq2.jpg` 50% frames active).")
+    print(f"   ✓ Verified {len(verified_items)} live YouTube lacrosse videos via oEmbed.")
     return verified_items, discovered_channels, outbound_domains
 
 
@@ -636,13 +636,13 @@ def get_foundational_lacrosse_curations() -> List[Dict[str, Any]]:
                     "category": cat,
                     "categoryLabel": category_Labels.get(cat, "Stick Doctoring & Pockets"),
                     "subTag": sub_tag,
-                    "duration": "50% Still Verified",
+                    "duration": "",
                     "midpointStill": meta["midpoint_still"],
                     "fallbackStill": meta["fallback_still"],
                     "title": meta["title"],
                     "author": meta["author"],
                     "authorAvatar": avatar,
-                    "badge": "50% Still Frame",
+                    "badge": "",
                     "sourceHub": meta["author"],
                     "curatorNote": f"Film from {meta['author']}.",
                     "vouchQuote": f"Film from {meta['author']}.",
@@ -756,8 +756,7 @@ def generate_daily_top_10_blog(catalog: List[Dict[str, Any]], trends_report: Dic
         "---",
         "",
         "## ⚡ 1. Executive Summary (What Moved on the Field Today)",
-        f"Today's shelf holds **{len(catalog)} lacrosse films and source cards**. A video is listed only after YouTube oEmbed accepts the id. A card that is not a video is an archive scan or a source page, not a PDF this site hosts. ",
-        "Every video uses **50% midpoint still frames (`hq2.jpg`)** so players and coaches see the actual pocket channel, crease footwork, or slide package before clicking.",
+        f"Today's shelf holds **{len(catalog)} lacrosse films and source cards**. A video is listed only after YouTube oEmbed accepts the id. A card that is not a video is an archive scan or a source page.",
         "",
         "### 📈 Today's Rising Lacrosse Trend Radar",
     ]
@@ -773,10 +772,9 @@ def generate_daily_top_10_blog(catalog: List[Dict[str, Any]], trends_report: Dic
     ])
 
     for idx, item in enumerate(top_10, 1):
-        badge = item.get("badge") or ("50% Still Frame" if item["type"] == "video" else item["type"])
         md_lines.extend([
             f"### `[{idx:02d}]` {item['title']}",
-            f"- **Type:** {badge} · **Category:** `{item['categoryLabel']}` (`{item.get('subTag', '')}`)",
+            f"- **Shelf:** `{item['categoryLabel']}` (`{item.get('subTag', '')}`)",
             f"- **Channel:** {item['author']} · *{item.get('sourceHub', '')}*",
             f"- **Curator note:** *\"{item.get('curatorNote') or item.get('vouchQuote', '')}\"*",
             f"- **Direct Link:** [{item['url']}]({item['url']})",

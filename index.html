@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LacrosseTube — Zero-Slop Lacrosse Mastery & Stick Doctoring Archive (ST-100)</title>
+  <title>LacrosseTube</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
       <div class="brand-icon">🥍</div>
       <div class="brand-title">
         LacrosseTube
-        <span class="brand-tag">ST-100 // Zero-Slop Film & Craft</span>
+        <span class="brand-tag">Film, interviews, and stick work</span>
       </div>
     </a>
 
@@ -43,6 +43,8 @@
         <span>Locker</span>
         <span class="vault-count" id="vaultCount">0</span>
       </button>
+      <label class="nav-btn" for="sharedFile">Open file</label>
+      <input id="sharedFile" type="file" accept="application/json,.json" hidden>
     </div>
   </header>
 
@@ -66,7 +68,7 @@
 
   <!-- Sub-Topic Quick Filter Bar -->
   <div class="subtags-bar">
-    <span class="subtag-label">[ST-100 DRILL FILTER] //</span>
+    <span class="subtag-label">Drill filter</span>
     <span class="subtag-pill active" data-sub="all">All Sub-Topics</span>
     <span class="subtag-pill" data-sub="Pocket & Mesh Channeling">🧵 Mesh Channeling</span>
     <span class="subtag-pill" data-sub="Sidewall Knots">🪢 Sidewall Knots</span>
@@ -87,10 +89,9 @@
 
   <div class="manifesto-banner">
     <div class="manifesto-text">
-      <span class="manifesto-pill">Karpathy Anti-Clickbait Invariant</span>
-      <span>Halfway frames (`hq2.jpg`) · college film, interviews, tips, stick work · a card says Source page or Archive scan when it is not a video</span>
+      <span>College film, interviews, tips, and stick work. A card says Source page or Archive scan when it is not a video.</span>
     </div>
-    <div class="stats-counter" id="statsLine">Loading live lacrosse catalog...</div>
+    <div class="stats-counter" id="statsLine">Loading the shelf...</div>
   </div>
 
   <main>

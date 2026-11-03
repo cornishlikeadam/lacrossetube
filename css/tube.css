@@ -328,6 +328,22 @@
       flex-wrap: wrap;
     }
 
+    .locker-row {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      padding: 12px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      background: #18181b;
+      cursor: pointer;
+    }
+
+    .locker-row-main { flex: 1; min-width: 180px; }
+
     .dispatch-intro h1 {
       font-size: 1.45rem;
       font-weight: 800;

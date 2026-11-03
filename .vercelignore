@@ -11,3 +11,9 @@ __pycache__/
 *.pyc
 .env
 .env.*
+mcp/
+dist/
+.claude/
+drafts/
+supabase/.temp/
+supabase/.branches/

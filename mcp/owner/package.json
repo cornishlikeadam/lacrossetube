@@ -1,0 +1,16 @@
+{
+  "name": "lacrossetube-owner-mcp",
+  "private": true,
+  "type": "module",
+  "description": "Owner MCP for LacrosseTube, Phase 0: site tools only. Runs on the operator's machine.",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@noble/hashes": "2.4.0",
+    "@supabase/supabase-js": "2.118.0",
+    "zod": "4.6.7"
+  }
+}

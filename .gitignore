@@ -7,3 +7,6 @@ __pycache__/
 output/
 .env
 .env.*
+node_modules/
+dist/
+drafts/

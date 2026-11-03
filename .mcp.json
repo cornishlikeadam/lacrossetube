@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "lacrossetube-owner": {
+      "command": "node",
+      "args": ["mcp/owner/server.js"]
+    }
+  }
+}

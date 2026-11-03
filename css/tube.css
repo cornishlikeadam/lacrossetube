@@ -316,6 +316,112 @@
 
     main { padding: 18px 24px 60px 24px; }
 
+    body.has-practice main { padding-bottom: 200px; }
+
+    .dispatch-span { grid-column: 1 / -1; }
+
+    .dispatch-intro {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .dispatch-intro h1 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .mark-row, .practice-step {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .skill-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+    .skill-pills button[aria-pressed="true"] {
+      background: var(--chip-active);
+      color: var(--chip-active-text);
+      border-color: var(--chip-active);
+    }
+
+    .mark-clock {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--basquiat-gold);
+      min-width: 3.2rem;
+    }
+
+    .practice-bar {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      z-index: 70;
+      background: rgba(24, 24, 27, 0.96);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .practice-bar h2 {
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--basquiat-gold);
+    }
+
+    .practice-title {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font: inherit;
+      font-weight: 800;
+      font-size: 1rem;
+      width: min(280px, 100%);
+    }
+
+    .practice-why, .mark-text {
+      background: #121217;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-radius: 8px;
+      padding: 6px 8px;
+      font: inherit;
+      font-size: 0.84rem;
+    }
+
+    .hint { color: var(--text-muted); font-size: 0.78rem; }
+
+    .practice-why { flex: 1 1 180px; }
+    .mark-text { flex: 1 1 220px; }
+
+    #practiceSheet { display: none; }
+
+    @media print {
+      body * { visibility: hidden !important; }
+      #practiceSheet, #practiceSheet * { visibility: visible !important; }
+      #practiceSheet {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 0.6in;
+        background: white;
+        color: black;
+      }
+      #practiceSheet h1 { font-size: 22pt; margin: 0 0 8pt; }
+      #practiceSheet ol { margin: 0; padding-left: 1.1em; }
+      #practiceSheet li { margin: 0 0 12pt; font-size: 13pt; }
+      #practiceSheet a { color: black; text-decoration: none; }
+    }
+
     .grid-container {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

@@ -48,9 +48,8 @@
 
   <!-- Primary YouTube-Style Tabs -->
   <div class="chips-bar">
-    <div class="chip active" data-category="all">
-      🌸 All Lacrosse
-    </div>
+    <div class="chip chip-special active" data-category="dispatch">👑 Shelf Dispatch</div>
+    <div class="chip" data-category="all">🌸 Whole shelf</div>
     <div class="chip" data-category="games">🎬 College & Pro Film</div>
     <div class="chip" data-category="interviews">🎙️ Interviews</div>
     <div class="chip" data-category="tips">🎯 Tips & Tricks</div>
@@ -59,9 +58,7 @@
     <div class="chip" data-category="defense">🛡️ Defense</div>
     <div class="chip" data-category="box">⚡ Box</div>
     <div class="chip" data-category="shelf">📑 Sources & Scans</div>
-    <div class="chip chip-special" data-category="blog">
-      👑📰 Shelf Dispatch
-    </div>
+    <div class="chip chip-special" data-category="blog">📰 Dispatch log</div>
     <div class="chip chip-special" data-category="trends">
       📡 Trend, Channel & Forum Radar
     </div>
@@ -100,6 +97,21 @@
     <div class="grid-container" id="cardsGrid"></div>
   </main>
 
+  <aside class="practice-bar" id="practiceBar" hidden>
+    <h2>Practice card</h2>
+    <div class="mark-row">
+      <input class="practice-title" id="practiceTitle" maxlength="60" aria-label="Practice title" value="Practice">
+      <span class="hint" id="practiceCount"></span>
+      <button class="nav-btn" type="button" id="practicePrint">Print</button>
+      <button class="nav-btn" type="button" id="practiceCopy">Copy link</button>
+      <button class="nav-btn" type="button" id="practiceSave" hidden>Save into Locker</button>
+      <button class="nav-btn" type="button" id="practiceClear">Clear</button>
+    </div>
+    <div id="practiceSteps"></div>
+    <p class="hint" id="practiceNote" role="status"></p>
+  </aside>
+  <article id="practiceSheet"></article>
+
   <div class="modal-overlay" id="playerModal">
     <div class="modal-content" style="position: relative;">
       <button class="modal-close-btn">✕</button>
@@ -109,6 +121,7 @@
   </div>
 
   <script src="/data/live_bundle.js"></script>
+  <script src="/js/marks.js"></script>
   <script src="/js/tube.js"></script>
 </body>
 </html>

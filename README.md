@@ -10,6 +10,31 @@ python3 -m http.server 8090
 
 Open http://localhost:8090. The shelf is bundled in `data/live_bundle.js`; Dispatch selections come from `data/dispatch.json`.
 
+On the `web3-platform` branch the pages are built with Vite (`npm ci`, then `npm run dev` or `npm run build` into `dist/`). The shelf's classic scripts in `js/` and `data/`, plus `samples/` and `blog/`, are copied into the build unchanged. Without Supabase settings the build is still the same static site.
+
+## Web3 Phase 0 (branch `web3-platform`)
+
+Phase 0 adds the foundation only: the Vite build, the Supabase schema with row-level security, key login, and the owner MCP's site tools. No teams, profiles, leaderboard or money features exist yet.
+
+**Key login.** `/key` (not linked from the shelf) makes a secp256k1 key on the device, stores it in IndexedDB encrypted with a passkey's PRF output or a 6-digit PIN, and signs a one-time challenge. The `key-login` Edge Function checks the signature and returns a normal Supabase session. No passwords; email signup is off. Unknown keys are refused unless the `ALLOW_OPEN_KEY_SIGNUP` secret is `true` (local and preview testing only); in Phase 1 keys come from team rosters.
+
+**Environment names.** Values are never committed.
+
+| Name | Where | Used for |
+| --- | --- | --- |
+| `SUPABASE_URL` | Vercel (build), `mcp/owner/.env` | Supabase project URL |
+| `SUPABASE_ANON_KEY` | Vercel (build) | Public anon or publishable key for the browser |
+| `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_SECRET_KEY`) | `mcp/owner/.env` on the operator machine only | Owner MCP writes |
+| `ALLOW_OPEN_KEY_SIGNUP` | Edge secret, preview and local only | Lets throwaway keys log in before rosters exist |
+| `ANTHROPIC_API_KEY` | Edge secret, later phase | Meeting analysis |
+| `OWNER_PUBKEY` | Edge secret, later phase | Checking owner-signed actions |
+
+**Local Supabase.** `npx supabase start` (Docker), then `npx supabase functions serve --env-file supabase/.env.local` with `ALLOW_OPEN_KEY_SIGNUP=true` in that git-ignored file. `npm run check:key-login` logs in two throwaway keys and checks row-level security. This project's local ports are 553xx so it can run beside another local Supabase project.
+
+**Hosted Supabase.** `npx supabase login`, `npx supabase link --project-ref <ref>`, `npx supabase db push`, `npx supabase config push` (turns off email signup on the project), `npx supabase functions deploy key-login`, then `node scripts/set-supabase-csp.mjs https://<ref>.supabase.co` to add that one host to the CSP's `connect-src`.
+
+**Owner MCP.** `mcp/owner` is a stdio MCP server registered in `.mcp.json`. Run `npm --prefix mcp/owner ci` once. Its tools are `catalog_search`, `vouch_add`, `curator_run`, `blog_draft` and `ots_verify` (underscores, because tool names cannot contain dots). It never holds the owner's private key. Supabase writes are additive; `daily_6pm_curator.py` still writes the static catalog.
+
 ## Film notes and team sharing
 
 Open a film to see the clock and **Mark this moment**. Add a short note, optional skill tag, and optional by name. The clock accepts time messages only from the current YouTube privacy-enhanced embed. It never estimates elapsed time while buffering. If the player cannot report time, use **Set timestamp manually**.

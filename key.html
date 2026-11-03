@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Your key · LacrosseTube</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/key.css">
+</head>
+<body>
+  <main class="key">
+    <a class="back" href="/">← Shelf</a>
+    <h1>Your key</h1>
+    <p class="lede">One key on this device is your login. It is made here, stays here, and never holds money. No password, no email.</p>
+    <p class="note">Test page. Later, keys come from your team's roster.</p>
+
+    <section aria-labelledby="state-h">
+      <h2 id="state-h">On this device</h2>
+      <p id="state" class="state" aria-live="polite">Checking…</p>
+    </section>
+
+    <section id="make" aria-labelledby="make-h" hidden>
+      <h2 id="make-h">Make a key</h2>
+      <p>A passkey (Face ID, fingerprint or your device PIN) protects it where this browser supports it. Otherwise, choose a 6-digit PIN.</p>
+      <button id="make-passkey" type="button">Make key with a passkey</button>
+      <label for="new-pin">6-digit PIN</label>
+      <input id="new-pin" type="password" inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="new-password">
+      <button id="make-pin" type="button">Make key with this PIN</button>
+    </section>
+
+    <section id="login" aria-labelledby="login-h" hidden>
+      <h2 id="login-h">Sign in</h2>
+      <div id="pin-row">
+        <label for="pin">PIN</label>
+        <input id="pin" type="password" inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="current-password">
+      </div>
+      <button id="sign-in" type="button">Sign in with my key</button>
+      <button id="sign-out" type="button" hidden>Sign out</button>
+      <button id="remove" type="button" class="quiet">Remove key from this device</button>
+    </section>
+
+    <p id="msg" class="msg" role="status" aria-live="polite"></p>
+  </main>
+  <script type="module" src="/core/key-page.js"></script>
+</body>
+</html>

@@ -3,6 +3,11 @@
 //   POST { step: 'verify', pubkey, challenge, sig }           -> { session, personId, pubkey }
 //   POST { step: 'enroll', pubkey, challenge, sig, verifier } -> { pepper }   (PIN keys, once)
 //   POST { step: 'pin', pubkey, verifier }                    -> { pepper }   (unlock a PIN key)
+//   POST { step: 'apply', pubkey, challenge, sig, verifier?, coach, team } -> { pepper?, session, personId, orgId }
+//   POST { step: 'invite-info', code }                        -> { invite }
+//   POST { step: 'invite-accept', code, pubkey, challenge, sig, verifier?, consent? } -> { pepper?, session, personId }
+// `apply` is how a coach starts: it registers their first key and an unverified team, which the
+// owner then verifies with the owner key (owner-verify). Everyone else joins from a roster invite.
 // Signatures are checked by _shared/key-login-core.js. The session is a normal Supabase session for
 // the person's auth user, minted server-side (generateLink + verifyOtp); no email is sent. The auth
 // user's address is a placeholder on the reserved .invalid domain, tied to the person, not the key,
@@ -35,7 +40,27 @@ const HEX64 = /^[0-9a-f]{64}$/;
 const LIMITS = {
   challenge: [30, 60], verify: [20, 60], enroll: [10, 3600], pin: [20, 60],
   keyVerify: [10, 60], keyPin: [10, 60],
+  apply: [5, 3600], inviteInfo: [30, 60], inviteAccept: [10, 60],
 } as const;
+const NAME = /^[^\s<>"]{1,24}( [^\s<>"]{1,24})?$/, INITIAL = /^[A-Za-z]$/, EMAIL = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/;
+const TEAM = /^[^<>"]{2,80}$/, CITY = /^[^<>"]{0,60}$/, CODE = /^[A-Za-z0-9_-]{20,40}$/;
+const codeHash = (code: unknown) => {
+  if (!CODE.test(String(code))) throw new KeyLoginError('That invite link is not complete. Open it again from the sheet or message.', 400);
+  return bytesToHex(sha256(new TextEncoder().encode(String(code))));
+};
+// A new PIN key gets its verifier hash and pepper stored with the key; a passkey key gets neither.
+function pinFields(verifier: unknown) {
+  if (verifier == null) return { hash: null, pepper: null };
+  return { hash: verifierHash(verifier), pepper: bytesToHex(crypto.getRandomValues(new Uint8Array(32))) };
+}
+// Postgres errors raised on purpose by the roster functions carry a message meant for people.
+function sqlError(e: { code?: string; message?: string }) {
+  if (e.code === '23505') return new KeyLoginError('This key is already registered. Remove it from this device and try again.', 409);
+  if (e.code === 'P0002') return new KeyLoginError(e.message ?? 'Not found.', 404);
+  if (e.code === '42501') return new KeyLoginError(e.message ?? 'Not allowed.', 403);
+  if (e.code === '23514' || e.code === 'P0001') return new KeyLoginError(e.message ?? 'That was not accepted.', 400);
+  return e;
+}
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -111,7 +136,10 @@ async function sessionFor(db: Db, userId: string, personId: string) {
   return { access_token, refresh_token, expires_in, expires_at, token_type };
 }
 
-type Body = { step?: string; pubkey?: string; challenge?: string; sig?: string; verifier?: string };
+type Body = {
+  step?: string; pubkey?: string; challenge?: string; sig?: string; verifier?: string; code?: string; consent?: boolean;
+  coach?: { first_name?: string; last_initial?: string; email?: string }; team?: { name?: string; city?: string };
+};
 
 async function handle(body: Body, ip: string) {
   const db = admin();
@@ -151,6 +179,45 @@ async function handle(body: Body, ip: string) {
       if (r?.ok) return { pepper: r.pepper };
       if (r?.retry_after > 0) throw new RateLimited(r.retry_after);
       throw new KeyLoginError(r?.attempts_left ? `Wrong PIN. ${r.attempts_left} ${r.attempts_left === 1 ? 'try' : 'tries'} left before a lockout.` : 'Wrong PIN.', 401);
+    }
+    case 'apply': {
+      await limit(db, `ip:${ip}:apply`, LIMITS.apply);
+      const coach = body.coach ?? {}, team = body.team ?? {};
+      if (!NAME.test(String(coach.first_name ?? '').trim()) || !INITIAL.test(String(coach.last_initial ?? ''))) throw new KeyLoginError('Give your first name and last initial.', 400);
+      if (coach.email && !EMAIL.test(String(coach.email))) throw new KeyLoginError('That email does not look right.', 400);
+      if (!TEAM.test(String(team.name ?? '').trim()) || !CITY.test(String(team.city ?? ''))) throw new KeyLoginError('Give the team name and city.', 400);
+      const pin = pinFields(body.verifier);
+      const { pub, iat } = core.check(body.challenge, body.sig, body.pubkey);
+      const { data, error } = await db.rpc('apply_team', {
+        p_pubkey: pub, p_login_at: new Date(iat).toISOString(), p_verifier_hash: pin.hash, p_pepper: pin.pepper,
+        p_first_name: String(coach.first_name).trim(), p_last_initial: String(coach.last_initial), p_email: String(coach.email ?? ''),
+        p_team: String(team.name).trim(), p_city: String(team.city ?? ''),
+      });
+      if (error) throw sqlError(error);
+      const { person_id: personId, org_id: orgId } = data[0];
+      const userId = await authUserFor(db, { id: personId, auth_user_id: null });
+      return { pepper: pin.pepper, session: await sessionFor(db, userId, personId), personId, orgId, pubkey: pub };
+    }
+    case 'invite-info': {
+      await limit(db, `ip:${ip}:invite-info`, LIMITS.inviteInfo);
+      const { data, error } = await db.rpc('invite_info', { p_code_hash: codeHash(body.code) });
+      if (error) throw error;
+      if (!data) throw new KeyLoginError('This invite was already used or has expired. Ask your coach for a new one.', 404);
+      return { invite: data };
+    }
+    case 'invite-accept': {
+      await limit(db, `ip:${ip}:invite-accept`, LIMITS.inviteAccept);
+      const hash = codeHash(body.code), pin = pinFields(body.verifier);
+      const { pub, iat } = core.check(body.challenge, body.sig, body.pubkey);
+      const { data: personId, error } = await db.rpc('accept_invite', {
+        p_code_hash: hash, p_pubkey: pub, p_login_at: new Date(iat).toISOString(),
+        p_verifier_hash: pin.hash, p_pepper: pin.pepper, p_consent: body.consent === true,
+      });
+      if (error) throw sqlError(error);
+      const { data: person, error: personErr } = await db.from('people').select('id, auth_user_id').eq('id', personId).single();
+      if (personErr) throw personErr;
+      const userId = await authUserFor(db, person);
+      return { pepper: pin.pepper, session: await sessionFor(db, userId, person.id), personId: person.id, pubkey: pub };
     }
     default:
       throw new KeyLoginError('Unknown step.', 400);

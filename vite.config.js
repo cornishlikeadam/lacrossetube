@@ -7,7 +7,7 @@ import { resolve } from 'node:path';
 import { cpSync, existsSync } from 'node:fs';
 
 const root = import.meta.dirname;
-const PAGES = ['index', 'play', 'coach', 'key'];
+const PAGES = ['index', 'play', 'coach', 'key', 'join', 'team', 'placement'];
 const RUNTIME_DIRS = ['data', 'js', 'samples', 'blog'];
 
 // Vercel serves /play for play.html (cleanUrls); the dev server should too.

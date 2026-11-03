@@ -43,6 +43,20 @@ Phase 0 adds the foundation only: the Vite build, the Supabase schema with row-l
 
 **Owner MCP.** `mcp/owner` is a stdio MCP server registered in `.mcp.json`. Run `npm --prefix mcp/owner ci` once, and put `SUPABASE_URL` and `SUPABASE_SECRET_KEY` in `mcp/owner/.env`. Its tools are `catalog_search`, `vouch_add`, `curator_run`, `blog_draft` and `ots_verify` (underscores, because tool names cannot contain dots). It never holds the owner's private key. Supabase writes are additive; `daily_6pm_curator.py` still writes the static catalog.
 
+## Web3 Phase 1: teams, roster, invites, profiles
+
+**Flow.** A coach applies on `/coach` ("Your team"), which makes their key and an unverified team; a card lands on the owner board (`board_cards`). The owner verifies it with the owner key. The coach then adds roster rows (first name, last initial, number, position, age band; U13 rows need a parent email), makes the invite sheet (one QR code per person, one-time, 7 days, only a hash stored) and prints it. Each person opens their invite on `/join`, which makes the device key, attaches it to that roster row and signs them in on a profile filled from the roster. Players then play a five-challenge placement round (`/placement`, graded on the device with the existing rules) that seeds their concept ratings from 500 once, and land on `/team`.
+
+- **Under 13:** the player's invite waits until a parent opens theirs and gives consent (`guardians.consent_at`). No socials, no photos (avatars are presets), team-only visibility, off any global board unless a parent switches it on.
+- **13–17:** links on Instagram, TikTok, YouTube, X or Hudl only; team-only until both the player and a linked parent say public.
+- **Lost key:** "Turn off key" on the coach desk revokes the person's keys and ends their sessions (the lost device is signed out at once); a new invite brings back the same person, XP and seed rating.
+- **Money:** the payments, fundraisers, events, listings and orders tables exist with RLS and signature columns, and nothing reads or writes them from the browser. No pay control anywhere.
+- **Offline fallback:** the device roster and `#t=` / `#r=` links still work under "Offline roster" on the coach desk.
+
+**Owner key.** `scripts/owner.mjs` runs only on the owner's machine. `node scripts/owner.mjs init` makes the key, encrypted with a passphrase in `~/.lacrossetube/owner-key.json`, and prints the public key for `npx supabase secrets set OWNER_PUBKEY=<pubkey>`. With `SUPABASE_URL` and `SUPABASE_ANON_KEY` set, `pending` lists applications and `verify <team-id>` verifies one. The owner-verify Edge Function accepts only requests signed by that key, for that action and team, within five minutes.
+
+**Checks.** `node scripts/check-phase1.mjs` runs the flow through the API against the local stack. `tests/e2e/phase1-gate.mjs` runs it in a real browser (Playwright, one context per person) against `npx vite` on localhost and writes the printed sheet and screenshots to `output/phase1/`. Both use a throwaway local owner key in `supabase/.env.owner-test`, never the real one.
+
 ## Film notes and team sharing
 
 Open a film to see the clock and **Mark this moment**. Add a short note, optional skill tag, and optional by name. The clock accepts time messages only from the current YouTube privacy-enhanced embed. It never estimates elapsed time while buffering. If the player cannot report time, use **Set timestamp manually**.

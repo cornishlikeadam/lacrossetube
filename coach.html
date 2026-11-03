@@ -11,10 +11,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Russo+One&display=swap">
 <link rel="stylesheet" href="/css/play.css">
+<link rel="stylesheet" href="/css/team.css">
 </head>
 <body>
 <div class="hud">
   <a class="hud-logo" href="/coach">COACH DESK</a>
+  <a class="pill" href="/team">MY TEAM</a>
   <a class="pill" href="/play">PLAYER APP ▶</a>
   <a class="pill" href="/">FILM ROOM</a>
 </div>
@@ -23,8 +25,13 @@
   <section class="coach-hero">
     <p class="kicker">COACH TOOLS · ROSTER · WHO PLAYED · SCORES PER IDEA</p>
     <h1>Coach dashboard</h1>
-    <p class="problem">Lacrosse only. Send one team link after a meeting. Each player gets the points for <b>their position</b>, plays them on their phone, and sends their results back to you. There is no server: the links carry the data, and this page keeps it on this device.</p>
+    <p class="problem">Lacrosse only. Your roster is your team: every player joins from an invite you hand them, gets the points for <b>their position</b>, and plays them on their phone. No team account yet? The team link below still works on its own, with no server.</p>
     <p class="alert" id="c-alert" role="alert" hidden></p>
+  </section>
+
+  <section class="panel team-panel" aria-labelledby="p0">
+    <h2 id="p0"><i>★</i> YOUR TEAM</h2>
+    <div id="team-body"><p class="hint">Loading your team…</p></div>
   </section>
 
   <section class="panel" aria-labelledby="p1">
@@ -46,12 +53,13 @@
     <div class="linkbox" id="c-linkbox" hidden></div>
   </section>
 
-  <section class="panel" aria-labelledby="p2">
-    <h2 id="p2"><i>2</i> ROSTER</h2>
+  <details class="panel offline-roster">
+    <summary><h2 id="p2"><i>2</i> OFFLINE ROSTER (THIS DEVICE ONLY)</h2></summary>
+    <p class="hint">For teams without an account. Your team roster above is the real one.</p>
     <p class="hint" id="c-roster-for">One name or jersey number per line. Players type the same name or number when they send results. Numbers keep players' names off the links.</p>
     <textarea id="c-roster" spellcheck="false" aria-label="Roster, one player per line" placeholder="#3&#10;#5&#10;#12&#10;#22"></textarea>
     <div class="row"><button class="btn alt" id="c-roster-save" type="button">SAVE ROSTER</button><span class="hint" id="c-roster-note" role="status"></span></div>
-  </section>
+  </details>
 
   <section class="panel" aria-labelledby="p3">
     <h2 id="p3"><i>3</i> WHO PLAYED</h2>
@@ -68,6 +76,8 @@
   <p class="fine" style="margin-top:18px">Coach data lives on this device only. Clearing site data clears it.</p>
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<section class="qr-sheet" id="qr-sheet" aria-label="Invite sheet" hidden></section>
 <script type="module" src="/field/coach.js"></script>
+<script type="module" src="/core/coach-team.js"></script>
 </body>
 </html>

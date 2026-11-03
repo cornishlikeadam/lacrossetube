@@ -1,0 +1,75 @@
+/* Team pages (join, team, placement) and the coach desk's "Your team" panel. Built on play.css
+   tokens and classes; this file adds only what those pages need, plus the printable QR sheet. */
+.team-screen h1{font-family:var(--f-pop);font-size:clamp(30px,8vw,44px);line-height:1.05;margin:4px 0 8px}
+.team-screen p + p{margin-top:8px}
+.sub{font-family:var(--f-hud);font-size:14px;letter-spacing:.12em;color:var(--ink-soft);margin-top:8px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.msg{font-size:15px;min-height:1.5em}
+.msg.ok{color:var(--green)}
+.msg.err{color:var(--stop)}
+.empty{color:var(--ink-soft);border:2px dashed rgba(255,255,255,.18);padding:14px}
+.badge{font-family:var(--f-hud);font-size:11px;letter-spacing:.1em;padding:2px 8px;margin-left:6px;vertical-align:2px}
+.badge.ok{background:rgba(83,224,90,.15);color:var(--green)}
+
+/* Identity card: filled from the roster. */
+.id-card{display:flex;gap:14px;align-items:center;background:#0a0f22;border:2px solid rgba(255,255,255,.12);padding:14px}
+.id-card .glyph{font-size:44px;line-height:1;width:64px;height:64px;display:grid;place-items:center;background:var(--field);border:2px solid rgba(255,255,255,.15)}
+.id-card b{display:block;font-family:var(--f-pop);font-size:26px;letter-spacing:.02em}
+.id-card span{display:block;color:var(--ink)}
+.id-card small{display:block;color:var(--ink-soft);font-size:13px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{background:#0a0f22;border:2px solid rgba(255,255,255,.1);padding:12px}
+.stat b{display:block;font-family:var(--f-pop);font-size:30px;color:var(--gold)}
+.stat small{color:var(--ink-soft);font-size:13px}
+
+/* Presets: avatar and field skin. No uploads anywhere. */
+.presets{border:2px solid rgba(255,255,255,.1);padding:12px;margin:0;display:grid;gap:10px}
+.presets legend{font-family:var(--f-hud);font-size:12px;letter-spacing:.14em;color:var(--ink-soft);padding:0 6px}
+.avatars{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px}
+.avatar-opt,.skin-opt{position:relative;cursor:pointer}
+.avatar-opt input,.skin-opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.avatar-opt span[aria-hidden]{display:grid;place-items:center;height:56px;font-size:30px;background:#0a0f22;border:2px solid rgba(255,255,255,.14)}
+.avatar-opt input:checked + span{border-color:var(--gold);background:rgba(255,216,74,.12)}
+.avatar-opt input:focus-visible + span,.skin-opt input:focus-visible + span{outline:2px solid var(--cont);outline-offset:2px}
+.skins{display:flex;flex-wrap:wrap;gap:8px}
+.skin-opt span{display:block;padding:8px 12px;background:#0a0f22;border:2px solid rgba(255,255,255,.14);font-family:var(--f-hud);font-size:13px}
+.skin-opt input:checked + span{border-color:var(--gold)}
+.skin-opt.locked{opacity:.5;cursor:not-allowed}
+.skin-opt small{display:block;font-size:11px;color:var(--ink-soft);text-align:center}
+
+.check{display:flex;gap:10px;align-items:flex-start;font-size:15px;line-height:1.4}
+.check input{width:20px;height:20px;margin-top:2px;flex:none}
+.consent{background:#0a0f22;border-left:4px solid var(--gold);padding:12px}
+.child{border:2px solid rgba(255,255,255,.1);padding:12px;display:grid;gap:8px}
+details.edit summary,details.offline-roster summary{cursor:pointer;list-style-position:inside}
+details.edit{border-top:2px solid rgba(255,255,255,.08);padding-top:10px}
+details.edit[open]{display:grid;gap:12px}
+details.offline-roster[open]{display:grid;gap:12px}
+details.offline-roster summary h2{display:inline-flex}
+.acts-cell{white-space:nowrap}
+.acts-cell .ghost{padding:4px 8px;font-size:13px;margin-right:4px}
+
+.placement-canvas{display:block;width:100%;touch-action:none;border:2px solid rgba(255,255,255,.12);margin-top:10px}
+
+/* The invite sheet: on screen it sits under the coach desk; printed, it is all that shows. */
+.qr-sheet{max-width:980px;margin:18px auto 60px;padding:16px;background:var(--panel);border:2px solid rgba(255,255,255,.1)}
+.qr-sheet h2{font-family:var(--f-pop);font-size:28px}
+.sheet-head{display:grid;gap:8px;margin-bottom:14px}
+.sheet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.invite-card{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;background:#fff;color:#111;padding:10px;break-inside:avoid}
+.invite-card .qr svg{width:120px;height:120px;display:block}
+.invite-card b{display:block;font-family:var(--f-pop);font-size:22px}
+.invite-card span,.invite-card small{display:block;font-size:13px}
+.invite-card code.link{display:block;font-size:10px;word-break:break-all;color:#444;margin:4px 0}
+.invite-card .ghost{color:#111;border-color:#888;padding:4px 8px;font-size:12px}
+
+@media print{
+  body.print-sheet > *:not(#qr-sheet){display:none!important}
+  body.print-sheet{background:#fff!important;color:#111}
+  body.print-sheet::after{display:none}
+  body.print-sheet .qr-sheet{margin:0;padding:0;border:0;background:#fff;color:#111;max-width:none}
+  body.print-sheet .screen-only{display:none!important}
+  body.print-sheet .sheet-grid{grid-template-columns:repeat(2,1fr);gap:8mm}
+  body.print-sheet .invite-card{border:1px solid #999}
+}

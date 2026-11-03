@@ -51,7 +51,7 @@ function fakePinServer() {
   const keys = new Map(), c = core();
   return {
     keys,
-    async enroll(pub, signWithNewKey, verifier) {
+    async register(pub, signWithNewKey, verifier) {
       const { challenge } = c.issue(pub);
       c.check(challenge, signWithNewKey(loginMessage(challenge, sha256)), pub);
       const pepper = bytesToHex(crypto.getRandomValues(new Uint8Array(32)));

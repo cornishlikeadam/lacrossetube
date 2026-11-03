@@ -393,6 +393,10 @@ deno_version = 2
 [functions.key-login]
 verify_jwt = false
 
+# Owner actions are signed by the owner key, not a user session.
+[functions.owner-verify]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 55327

@@ -7,9 +7,11 @@
 // misses, so a copy of this browser's storage cannot be brute-forced offline.
 // The key is for login and signing only. It never holds funds.
 //
-// PIN keys talk to the server through a `pins` service the caller passes in (core/auth.js does):
-//   pins.enroll(pubkey, signWithNewKey, verifierHex) -> pepperHex   (once, when the key is made)
-//   pins.pepper(pubkey, verifierHex)                 -> pepperHex   (each unlock)
+// The caller passes a `server` (core/auth.js builds one per flow):
+//   server.register(pubkey, signWithNewKey, verifierHex | null) -> pepperHex | null
+//       once, when the key is made: joining from an invite, applying as a coach, or the /key test
+//       page. A PIN key sends its verifier and gets its pepper; a passkey key sends null.
+//   server.pepper(pubkey, verifierHex) -> pepperHex   (each unlock of a PIN key)
 import { schnorr } from '@noble/curves/secp256k1.js';
 import { bytesToHex, hexToBytes } from '@noble/curves/utils.js';
 import { hmac } from '@noble/hashes/hmac.js';
@@ -117,7 +119,7 @@ export async function status() {
 
 // Creates and stores a new key. method 'prf' uses a passkey and falls back to the PIN when the
 // browser cannot; 'pin' uses the PIN. A PIN key is enrolled with the server before it is stored.
-export async function createKey({ pin, method = 'prf' } = {}, pins) {
+export async function createKey({ pin, method = 'prf' } = {}, server) {
   if (await get(RECORD)) throw new Error('This device already has a key. Remove it before making another.');
   const sk = schnorr.utils.randomSecretKey(), salt = random(32), pub = publicKeyOf(sk);
   try {
@@ -130,11 +132,10 @@ export async function createKey({ pin, method = 'prf' } = {}, pins) {
     }
     if (used === 'pin') {
       if (!isPin(pin)) throw new Error(method === 'prf' ? 'A passkey did not work here. Choose a 6-digit PIN instead.' : 'Choose a 6-digit PIN.');
-      if (!pins) throw new Error('A PIN key needs the server to enroll it.');
       const { bits, verifier } = await stretchPin(pin, salt);
-      const pepper = await pins.enroll(pub, msg => bytesToHex(schnorr.sign(msg, sk)), verifier);
+      const pepper = await server.register(pub, msg => bytesToHex(schnorr.sign(msg, sk)), verifier);
       inner = await pinKey(bits, pepper, salt);
-    }
+    } else await server.register(pub, msg => bytesToHex(schnorr.sign(msg, sk)), null);
     const sealed = await seal(inner, sk);
     const outer = await seal(await deviceKey(), new Uint8Array([...sealed.iv, ...sealed.ct]));
     await put(RECORD, { v: VERSION, pub, method: used, salt, credId, outer, created: new Date().toISOString() });
@@ -143,7 +144,7 @@ export async function createKey({ pin, method = 'prf' } = {}, pins) {
 }
 
 // Opens the key with the PIN (or the passkey) and passes the secret to fn, then wipes it.
-export async function withSecret({ pin } = {}, pins, fn) {
+export async function withSecret({ pin } = {}, server, fn) {
   const r = await get(RECORD);
   if (!r) throw new Error('No key on this device.');
   if (r.v !== VERSION) throw new Error('This key was made with an older version. Remove it and make a new one.');
@@ -152,7 +153,7 @@ export async function withSecret({ pin } = {}, pins, fn) {
   else {
     if (!isPin(pin)) throw new Error('Enter your 6-digit PIN.');
     const { bits, verifier } = await stretchPin(pin, r.salt);
-    inner = await pinKey(bits, await pins.pepper(r.pub, verifier), r.salt);
+    inner = await pinKey(bits, await server.pepper(r.pub, verifier), r.salt);
   }
   const packed = await unseal(await deviceKey(), r.outer);
   let sk;
@@ -161,8 +162,8 @@ export async function withSecret({ pin } = {}, pins, fn) {
   try { return await fn(sk, r.pub); } finally { sk.fill(0); }
 }
 
-export async function sign(message, unlock, pins) {
-  return withSecret(unlock, pins, sk => bytesToHex(schnorr.sign(message, sk)));
+export async function sign(message, unlock, server) {
+  return withSecret(unlock, server, sk => bytesToHex(schnorr.sign(message, sk)));
 }
 
 export async function removeKey() { await del(RECORD); }

@@ -16,24 +16,32 @@ On the `web3-platform` branch the pages are built with Vite (`npm ci`, then `npm
 
 Phase 0 adds the foundation only: the Vite build, the Supabase schema with row-level security, key login, and the owner MCP's site tools. No teams, profiles, leaderboard or money features exist yet.
 
-**Key login.** `/key` (not linked from the shelf) makes a secp256k1 key on the device, stores it in IndexedDB encrypted with a passkey's PRF output or a 6-digit PIN, and signs a one-time challenge. The `key-login` Edge Function checks the signature and returns a normal Supabase session. No passwords; email signup is off. Unknown keys are refused unless the `ALLOW_OPEN_KEY_SIGNUP` secret is `true` (local and preview testing only); in Phase 1 keys come from team rosters.
+**Key login.** `/key` (not linked from the shelf) makes a secp256k1 key on the device and signs a one-time challenge. The `key-login` Edge Function checks the signature and returns a normal Supabase session. No passwords; email signup is off.
+
+- **Storage.** The key sits in IndexedDB under two layers of AES-GCM: a non-extractable device key, and either a passkey's PRF secret or a PIN key. Passkeys are offered only where the browser reports PRF support (`getClientCapabilities`); everywhere else, including Safari while its PRF support is unreliable, the page uses the PIN.
+- **PIN keys.** The PIN key comes from the 6-digit PIN (PBKDF2, 600,000 rounds) plus a random pepper that only the server holds. The server stores a hash of a PIN verifier, never the PIN, and returns the pepper only for the right verifier. Five misses lock the key for a minute, and each further miss doubles the lock, up to a day. A copy of the device's storage cannot be guessed offline.
+- **Rate limits.** Every key-login step is limited per IP address, and logins and PIN checks also per key (`rate_limit_hit` in Postgres).
+- **Who can sign up.** Unknown keys are refused. On a test project, `ALLOW_OPEN_KEY_SIGNUP` set to that project's own ref (or `true` on a local stack) lets throwaway keys in. The value only works on the project it names, so copying it elsewhere does nothing. In Phase 1, keys come from team rosters.
+
+**Environments.** `lacrossetube-dev` (`xeildwwpwfgficrqziph`) is the test-only project: Vercel previews use it, and throwaway-key signup is on. Real users get a separate production project, created when Phase 1 is ready, where `ALLOW_OPEN_KEY_SIGNUP` is never set.
 
 **Environment names.** Values are never committed.
 
 | Name | Where | Used for |
 | --- | --- | --- |
-| `SUPABASE_URL` | Vercel (build), `mcp/owner/.env` | Supabase project URL |
-| `SUPABASE_ANON_KEY` | Vercel (build) | Public anon or publishable key for the browser |
-| `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_SECRET_KEY`) | `mcp/owner/.env` on the operator machine only | Owner MCP writes |
-| `ALLOW_OPEN_KEY_SIGNUP` | Edge secret, preview and local only | Lets throwaway keys log in before rosters exist |
+| `SUPABASE_URL` | Vercel (Preview build), `mcp/owner/.env` | Supabase project URL |
+| `SUPABASE_ANON_KEY` | Vercel (Preview build) | Public publishable (or anon) key for the browser |
+| `SUPABASE_SECRET_KEY` (or legacy `SUPABASE_SERVICE_ROLE_KEY`) | `mcp/owner/.env` on the operator machine only | Owner MCP writes. Get it with `npx supabase projects api-keys --reveal`; without `--reveal` the CLI prints it masked. |
+| `SUPABASE_DB_PASSWORD` | `supabase/.env.hosted` on the operator machine only | `supabase link` and `db push` |
+| `ALLOW_OPEN_KEY_SIGNUP` | Edge secret, test projects only | The project's own ref; lets throwaway keys sign up before rosters exist |
 | `ANTHROPIC_API_KEY` | Edge secret, later phase | Meeting analysis |
 | `OWNER_PUBKEY` | Edge secret, later phase | Checking owner-signed actions |
 
-**Local Supabase.** `npx supabase start` (Docker), then `npx supabase functions serve --env-file supabase/.env.local` with `ALLOW_OPEN_KEY_SIGNUP=true` in that git-ignored file. `npm run check:key-login` logs in two throwaway keys and checks row-level security. This project's local ports are 553xx so it can run beside another local Supabase project.
+**Local Supabase.** `npx supabase start` (Docker), then `npx supabase functions serve --env-file supabase/.env.local` with `ALLOW_OPEN_KEY_SIGNUP=true` in that git-ignored file. `npm run check:key-login` logs in throwaway keys and checks row-level security, PIN lockout and rate limits. This project's local ports are 553xx so it can run beside another local Supabase project.
 
 **Hosted Supabase.** `npx supabase login`, `npx supabase link --project-ref <ref>`, `npx supabase db push`, `npx supabase config push` (turns off email signup on the project), `npx supabase functions deploy key-login`, then `node scripts/set-supabase-csp.mjs https://<ref>.supabase.co` to add that one host to the CSP's `connect-src`.
 
-**Owner MCP.** `mcp/owner` is a stdio MCP server registered in `.mcp.json`. Run `npm --prefix mcp/owner ci` once. Its tools are `catalog_search`, `vouch_add`, `curator_run`, `blog_draft` and `ots_verify` (underscores, because tool names cannot contain dots). It never holds the owner's private key. Supabase writes are additive; `daily_6pm_curator.py` still writes the static catalog.
+**Owner MCP.** `mcp/owner` is a stdio MCP server registered in `.mcp.json`. Run `npm --prefix mcp/owner ci` once, and put `SUPABASE_URL` and `SUPABASE_SECRET_KEY` in `mcp/owner/.env`. Its tools are `catalog_search`, `vouch_add`, `curator_run`, `blog_draft` and `ots_verify` (underscores, because tool names cannot contain dots). It never holds the owner's private key. Supabase writes are additive; `daily_6pm_curator.py` still writes the static catalog.
 
 ## Film notes and team sharing
 

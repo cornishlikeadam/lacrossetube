@@ -1,35 +1,69 @@
-// Key login. Two calls, no password and no email:
-//   POST { step: 'challenge', pubkey }            -> { challenge, expiresAt }
-//   POST { step: 'verify', pubkey, challenge, sig } -> { session, personId, pubkey }
-// The signature is checked by _shared/key-login-core.js. The session is a normal Supabase session
-// for the person's auth user, minted server-side (generateLink + verifyOtp); no email is sent.
-// The auth user's address is a placeholder on the reserved .invalid domain, tied to the person,
-// not the key, so a coach can re-issue a lost key and the person keeps their account.
+// Key login. No password and no email:
+//   POST { step: 'challenge', pubkey }                        -> { challenge, expiresAt }
+//   POST { step: 'verify', pubkey, challenge, sig }           -> { session, personId, pubkey }
+//   POST { step: 'enroll', pubkey, challenge, sig, verifier } -> { pepper }   (PIN keys, once)
+//   POST { step: 'pin', pubkey, verifier }                    -> { pepper }   (unlock a PIN key)
+// Signatures are checked by _shared/key-login-core.js. The session is a normal Supabase session for
+// the person's auth user, minted server-side (generateLink + verifyOtp); no email is sent. The auth
+// user's address is a placeholder on the reserved .invalid domain, tied to the person, not the key,
+// so a coach can re-issue a lost key and the person keeps their account.
+//
+// A PIN key is encrypted on the device with the PIN and a pepper only this server holds. The
+// server hands the pepper back for the right PIN verifier and locks the key after repeated misses
+// (public.key_pin_check), so a copy of the device's storage cannot be guessed offline.
+// Every step is rate-limited per IP address, and logins also per key (public.rate_limit_hit).
 //
 // Keys come from team rosters (Phase 1). Until then an unknown key is refused unless the
-// ALLOW_OPEN_KEY_SIGNUP secret is "true", which is for local and preview testing only.
+// ALLOW_OPEN_KEY_SIGNUP secret equals this project's own ref (or "true" on a local stack), so the
+// switch cannot be copied to another project by accident. Test projects only.
 import { createClient } from 'npm:@supabase/supabase-js@2.118.0';
 import { schnorr } from 'npm:@noble/curves@2.4.0/secp256k1.js';
 import { sha256 } from 'npm:@noble/hashes@2.4.0/sha2.js';
 import { hmac } from 'npm:@noble/hashes@2.4.0/hmac.js';
+import { bytesToHex, hexToBytes } from 'npm:@noble/hashes@2.4.0/utils.js';
 import { keyLoginCore, KeyLoginError } from '../_shared/key-login-core.js';
 
 const URL = Deno.env.get('SUPABASE_URL');
 const firstSecret = (json?: string) => { try { return Object.values(JSON.parse(json || '{}'))[0] as string | undefined; } catch { return undefined; } };
 const SECRET = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SECRET_KEY') || firstSecret(Deno.env.get('SUPABASE_SECRET_KEYS'));
-const OPEN_SIGNUP = Deno.env.get('ALLOW_OPEN_KEY_SIGNUP') === 'true';
+const PROJECT_REF = URL?.match(/^https:\/\/([a-z0-9]{20})\.supabase\.co\/?$/)?.[1];
+const OPEN_FLAG = Deno.env.get('ALLOW_OPEN_KEY_SIGNUP');
+const OPEN_SIGNUP = PROJECT_REF ? OPEN_FLAG === PROJECT_REF : OPEN_FLAG === 'true';
+const HEX64 = /^[0-9a-f]{64}$/;
+
+// [max hits, window in seconds]
+const LIMITS = {
+  challenge: [30, 60], verify: [20, 60], enroll: [10, 3600], pin: [20, 60],
+  keyVerify: [10, 60], keyPin: [10, 60],
+} as const;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: CORS });
+const reply = (body: unknown, status = 200, extra: Record<string, string> = {}) => Response.json(body, { status, headers: { ...CORS, ...extra } });
 const core = keyLoginCore({ schnorr, sha256, hmac, secret: SECRET });
 const admin = () => createClient(URL!, SECRET!, { auth: { autoRefreshToken: false, persistSession: false } });
+type Db = ReturnType<typeof admin>;
 const placeholderEmail = (personId: string) => `${personId}@people.lacrossetube.invalid`;
+const verifierHash = (verifier: unknown) => {
+  if (!HEX64.test(String(verifier))) throw new KeyLoginError('Bad PIN verifier.', 400);
+  return bytesToHex(sha256(hexToBytes(String(verifier))));
+};
 
-async function authUserFor(db: ReturnType<typeof admin>, person: { id: string; auth_user_id: string | null }) {
+class RateLimited extends KeyLoginError {
+  constructor(public retryAfter: number) {
+    super(`Too many tries. Try again in ${retryAfter < 120 ? `${retryAfter} seconds` : `${Math.ceil(retryAfter / 60)} minutes`}.`, 429);
+  }
+}
+async function limit(db: Db, bucket: string, [max, windowSeconds]: readonly [number, number]) {
+  const { data, error } = await db.rpc('rate_limit_hit', { p_bucket: bucket, p_max: max, p_window_seconds: windowSeconds });
+  if (error) throw error;
+  if (data === false) throw new RateLimited(windowSeconds);
+}
+
+async function authUserFor(db: Db, person: { id: string; auth_user_id: string | null }) {
   if (person.auth_user_id) return person.auth_user_id;
   const { data, error } = await db.auth.admin.createUser({ email: placeholderEmail(person.id), email_confirm: true, app_metadata: { person_id: person.id } });
   if (error) throw error;
@@ -38,8 +72,8 @@ async function authUserFor(db: ReturnType<typeof admin>, person: { id: string; a
   return data.user.id;
 }
 
-// First login of a key nobody issued: only with ALLOW_OPEN_KEY_SIGNUP (testing).
-async function openSignup(db: ReturnType<typeof admin>, pub: string, iat: number) {
+// First use of a key nobody issued: only on a test project with open signup switched on.
+async function openSignup(db: Db, pub: string, iat: number) {
   if (!OPEN_SIGNUP) throw new KeyLoginError('This key is not on a team roster yet.', 403);
   const { data: person, error } = await db.from('people').insert({}).select('id, auth_user_id').single();
   if (error) throw error;
@@ -51,8 +85,8 @@ async function openSignup(db: ReturnType<typeof admin>, pub: string, iat: number
   return person;
 }
 
-// Accept this challenge once: it must be newer than the key's last accepted login.
-async function claimLogin(db: ReturnType<typeof admin>, pub: string, iat: number) {
+// Accept this challenge once: it must be newer than the key's last accepted challenge.
+async function claimChallenge(db: Db, pub: string, iat: number) {
   const { data: key, error } = await db.from('keys').select('status, person_id').eq('pubkey', pub).maybeSingle();
   if (error) throw error;
   if (!key) return openSignup(db, pub, iat);
@@ -67,7 +101,7 @@ async function claimLogin(db: ReturnType<typeof admin>, pub: string, iat: number
   return person;
 }
 
-async function sessionFor(db: ReturnType<typeof admin>, userId: string, personId: string) {
+async function sessionFor(db: Db, userId: string, personId: string) {
   const { data: link, error } = await db.auth.admin.generateLink({ type: 'magiclink', email: placeholderEmail(personId) });
   if (error) throw error;
   if (link.user?.id !== userId) throw new Error('auth user mismatch');
@@ -77,21 +111,63 @@ async function sessionFor(db: ReturnType<typeof admin>, userId: string, personId
   return { access_token, refresh_token, expires_in, expires_at, token_type };
 }
 
+type Body = { step?: string; pubkey?: string; challenge?: string; sig?: string; verifier?: string };
+
+async function handle(body: Body, ip: string) {
+  const db = admin();
+  switch (body.step) {
+    case 'challenge': {
+      await limit(db, `ip:${ip}:challenge`, LIMITS.challenge);
+      return core.issue(String(body.pubkey ?? ''));
+    }
+    case 'verify': {
+      await limit(db, `ip:${ip}:verify`, LIMITS.verify);
+      const { pub, iat } = core.check(body.challenge, body.sig, body.pubkey);
+      await limit(db, `key:${pub}:verify`, LIMITS.keyVerify);
+      const person = await claimChallenge(db, pub, iat);
+      const userId = await authUserFor(db, person);
+      return { session: await sessionFor(db, userId, person.id), personId: person.id, pubkey: pub };
+    }
+    case 'enroll': {
+      await limit(db, `ip:${ip}:enroll`, LIMITS.enroll);
+      const hash = verifierHash(body.verifier);
+      const { pub, iat } = core.check(body.challenge, body.sig, body.pubkey);
+      await claimChallenge(db, pub, iat);
+      const pepper = bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
+      const { data, error } = await db.from('keys').update({ pin_verifier_hash: hash, pin_pepper: pepper, pin_fails: 0, pin_locked_until: null })
+        .eq('pubkey', pub).is('pin_verifier_hash', null).select('pubkey');
+      if (error) throw error;
+      if (!data?.length) throw new KeyLoginError('This key already has a PIN. Ask your coach for a new key to change it.', 409);
+      return { pepper };
+    }
+    case 'pin': {
+      await limit(db, `ip:${ip}:pin`, LIMITS.pin);
+      const hash = verifierHash(body.verifier), pub = String(body.pubkey ?? '');
+      if (!HEX64.test(pub)) throw new KeyLoginError('Bad key.', 400);
+      await limit(db, `key:${pub}:pin`, LIMITS.keyPin);
+      const { data, error } = await db.rpc('key_pin_check', { p_pubkey: pub, p_verifier_hash: hash });
+      if (error) throw error;
+      const r = data?.[0];
+      if (r?.ok) return { pepper: r.pepper };
+      if (r?.retry_after > 0) throw new RateLimited(r.retry_after);
+      throw new KeyLoginError(r?.attempts_left ? `Wrong PIN. ${r.attempts_left} ${r.attempts_left === 1 ? 'try' : 'tries'} left before a lockout.` : 'Wrong PIN.', 401);
+    }
+    default:
+      throw new KeyLoginError('Unknown step.', 400);
+  }
+}
+
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return reply({ error: 'Use POST.' }, 405);
   if (!URL || !SECRET) return reply({ error: 'Key login is not configured on this server.' }, 503);
-  let body: { step?: string; pubkey?: string; challenge?: string; sig?: string };
+  let body: Body;
   try { body = await req.json(); } catch { return reply({ error: 'Send JSON.' }, 400); }
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
   try {
-    if (body.step === 'challenge') return reply(core.issue(String(body.pubkey ?? '')));
-    if (body.step !== 'verify') return reply({ error: 'Unknown step.' }, 400);
-    const { pub, iat } = core.check(body.challenge, body.sig, body.pubkey);
-    const db = admin();
-    const person = await claimLogin(db, pub, iat);
-    const userId = await authUserFor(db, person);
-    return reply({ session: await sessionFor(db, userId, person.id), personId: person.id, pubkey: pub });
+    return reply(await handle(body, ip));
   } catch (e) {
+    if (e instanceof RateLimited) return reply({ error: e.message, retryAfter: e.retryAfter }, 429, { 'Retry-After': String(e.retryAfter) });
     if (e instanceof KeyLoginError) return reply({ error: e.message }, e.status);
     console.error('key-login failed', e);
     return reply({ error: 'Key login failed on the server.' }, 500);

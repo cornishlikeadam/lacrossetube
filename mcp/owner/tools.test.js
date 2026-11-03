@@ -95,7 +95,7 @@ test('ots_verify: a real Bitcoin proof verifies, a changed file does not, a cale
 
 test('the MCP server lists exactly the five Phase 0 site tools and answers a search', async () => {
   const client = new Client({ name: 'test', version: '0.0.0' });
-  await client.connect(new StdioClientTransport({ command: process.execPath, args: [resolve(import.meta.dirname, 'server.js')], env: { PATH: process.env.PATH } }));
+  await client.connect(new StdioClientTransport({ command: process.execPath, args: [resolve(import.meta.dirname, 'server.js')], env: { PATH: process.env.PATH, LT_OWNER_ENV_FILE: 'none' } }));
   try {
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map(t => t.name).sort(), ['blog_draft', 'catalog_search', 'curator_run', 'ots_verify', 'vouch_add']);

@@ -87,4 +87,36 @@ console.log('ok  money, invites and board tables are closed; anon reads only the
 const signup = await anon.auth.signUp({ email: `fake-${Date.now()}@example.com`, password: 'not-a-real-password-1' });
 assert.ok(signup.error, 'email signup must be off');
 console.log('ok  email and password signup is refused');
+
+// PIN keys: enroll once, get the pepper back only for the right verifier, lock after misses.
+const c = throwaway(), hex32 = () => bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
+const verifier = hex32();
+async function enroll(k, v) {
+  const { body: { challenge } } = await call({ step: 'challenge', pubkey: k.pub });
+  return call({ step: 'enroll', pubkey: k.pub, challenge, sig: bytesToHex(schnorr.sign(loginMessage(challenge, sha256), k.sk)), verifier: v });
+}
+const enrolled = await enroll(c, verifier);
+assert.equal(enrolled.status, 200, JSON.stringify(enrolled.body));
+assert.match(enrolled.body.pepper, /^[0-9a-f]{64}$/);
+assert.equal((await enroll(c, hex32())).status, 409);
+const pin = v => call({ step: 'pin', pubkey: c.pub, verifier: v });
+assert.equal((await pin(verifier)).body.pepper, enrolled.body.pepper);
+console.log('ok  a PIN key enrolls once and gets its pepper back for the right PIN');
+
+const misses = [];
+for (let i = 0; i < 5; i++) misses.push((await pin(hex32())).status);
+assert.deepEqual(misses, [401, 401, 401, 401, 429]);
+assert.equal((await pin(verifier)).status, 429, 'the right PIN must wait out the lock');
+console.log('ok  five wrong PINs lock the key, even against the right PIN');
+
+const ca2 = await client((await login(a.sk, a.pub)).res.body.session);
+assert.ok((await ca2.from('keys').select('pin_pepper')).error, 'the pepper must not be readable');
+assert.ok((await ca2.from('keys').select('*')).error, 'select * must fail on the hidden columns');
+assert.ifError((await ca2.from('keys').select('pubkey, status')).error);
+console.log('ok  the browser cannot read PIN verifiers or peppers, even for its own key');
+
+let limited = false;
+for (let i = 0; i < 40 && !limited; i++) limited = (await call({ step: 'challenge', pubkey: c.pub })).status === 429;
+assert.ok(limited, 'challenges from one IP must hit the rate limit');
+console.log('ok  challenge requests from one IP are rate-limited');
 console.log('\nkey login and RLS checks passed against', url);

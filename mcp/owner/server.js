@@ -9,7 +9,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { catalogSearch, vouchAdd, curatorRun, blogDraft, otsVerify, supabaseFromEnv } from './tools.js';
 
-try { process.loadEnvFile(fileURLToPath(new URL('./.env', import.meta.url))); } catch { /* no .env: Supabase tools report it */ }
+// LT_OWNER_ENV_FILE points at another env file; tests set it to "none" to run with no Supabase.
+const envFile = process.env.LT_OWNER_ENV_FILE ?? fileURLToPath(new URL('./.env', import.meta.url));
+if (envFile !== 'none') try { process.loadEnvFile(envFile); } catch { /* no .env: Supabase tools report it */ }
 const db = supabaseFromEnv();
 const server = new McpServer({ name: 'lacrossetube-owner', version: '0.1.0' });
 

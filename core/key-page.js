@@ -1,6 +1,6 @@
 // The /key test page: make a key on this device, sign in with it, sign out, or remove it.
-import { createKey, status, removeKey, isPin, prfSupported } from './keyring.js';
-import { logInWithKey, currentUser, logOut } from './auth.js';
+import { status, removeKey, isPin, prfAvailable } from './keyring.js';
+import { makeKey, logInWithKey, currentUser, logOut } from './auth.js';
 
 const $ = id => document.getElementById(id);
 const short = pub => `${pub.slice(0, 8)}…${pub.slice(-8)}`;
@@ -14,23 +14,25 @@ async function paint() {
   const key = await status(), user = key ? await currentUser() : null;
   $('make').hidden = !!key;
   $('login').hidden = !key;
-  $('make-passkey').hidden = !prfSupported();
+  $('make-passkey').hidden = !(await prfAvailable());
   if (!key) { $('state').textContent = 'No key on this device yet.'; return; }
   $('pin-row').hidden = key.method !== 'pin';
-  $('sign-in').hidden = !!user;
+  $('sign-in').hidden = !!user || key.outdated;
   $('sign-out').hidden = !user;
-  $('state').textContent = `Key ${short(key.pubkey)}, protected by ${key.method === 'prf' ? 'a passkey' : 'a PIN'}. ${user ? 'Signed in.' : 'Signed out.'}`;
+  $('state').textContent = key.outdated
+    ? `Key ${short(key.pubkey)} was made with an older version. Remove it and make a new one.`
+    : `Key ${short(key.pubkey)}, protected by ${key.method === 'prf' ? 'a passkey' : 'a PIN'}. ${user ? 'Signed in.' : 'Signed out.'}`;
 }
 
 $('make-passkey').addEventListener('click', e => busy(e.currentTarget, async () => {
-  const k = await createKey({ method: 'prf' });
+  const k = await makeKey({ method: 'prf' });
   if (k.method !== 'prf') throw new Error('This browser has no passkey key support. Use a PIN instead.');
   say('Key made. Sign in with it below.', 'ok'); await paint();
 }));
 $('make-pin').addEventListener('click', e => busy(e.currentTarget, async () => {
   const pin = $('new-pin').value;
   if (!isPin(pin)) throw new Error('Choose exactly 6 digits.');
-  await createKey({ method: 'pin', pin });
+  await makeKey({ method: 'pin', pin });
   $('new-pin').value = '';
   say('Key made. Sign in with it below.', 'ok'); await paint();
 }));

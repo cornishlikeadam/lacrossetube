@@ -5,19 +5,26 @@
 //   outer layer: AES-GCM under a non-extractable device key that also lives in IndexedDB.
 // The server releases a PIN key's pepper only for the right PIN and locks the key after repeated
 // misses, so a copy of this browser's storage cannot be brute-forced offline.
-// The key is for login and signing only. It never holds funds.
+// The same key is the person's DogeOS wallet: its 0x address is derived from it and stored with it.
 //
 // The caller passes a `server` (core/auth.js builds one per flow):
-//   server.register(pubkey, signWithNewKey, verifierHex | null) -> pepperHex | null
+//   server.register(pubkey, signWithNewKey, verifierHex | null, address) -> pepperHex | null
 //       once, when the key is made: joining from an invite, applying as a coach, or the /key test
 //       page. A PIN key sends its verifier and gets its pepper; a passkey key sends null.
 //   server.pepper(pubkey, verifierHex) -> pepperHex   (each unlock of a PIN key)
-import { schnorr } from '@noble/curves/secp256k1.js';
+import { schnorr, secp256k1 } from '@noble/curves/secp256k1.js';
 import { bytesToHex, hexToBytes } from '@noble/curves/utils.js';
 import { hmac } from '@noble/hashes/hmac.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+import { keccak_256 } from '@noble/hashes/sha3.js';
+import { addressFromSecret } from '../supabase/functions/_shared/evm.js';
+import { sealKeyFile } from './keyfile.js';
+import { slot, suffix } from './trial.js';
 
-const DB = 'lacrossetube-keyring', STORE = 'kv', RECORD = 'key', DEVICE = 'device-key';
+// One key store per browser. In a preview trial build, one per trial slot (see core/trial.js).
+const dbName = id => `lacrossetube-keyring${suffix(id)}`;
+const STORE = 'kv', RECORD = 'key', DEVICE = 'device-key';
+const addressOf = sk => addressFromSecret(sk, { secp256k1, keccak: keccak_256 });
 const VERSION = 2;
 const PBKDF2_ITERATIONS = 600000;
 const PIN = /^\d{6}$/;
@@ -27,15 +34,16 @@ const random = n => globalThis.crypto.getRandomValues(new Uint8Array(n));
 
 /* ---------- storage (IndexedDB, with a memory fallback for tests) ---------- */
 const mem = new Map();
-let dbp = null;
-function open() {
+const dbs = new Map();
+function open(id = slot) {
   if (!globalThis.indexedDB) return Promise.resolve(null);
-  return dbp ??= new Promise(resolve => {
-    const req = indexedDB.open(DB, 1);
+  if (!dbs.has(id)) dbs.set(id, new Promise(resolve => {
+    const req = indexedDB.open(dbName(id), 1);
     req.onupgradeneeded = () => req.result.createObjectStore(STORE);
     req.onsuccess = () => resolve(req.result);
     req.onerror = req.onblocked = () => resolve(null);
-  });
+  }));
+  return dbs.get(id);
 }
 function idb(db, mode, fn) {
   return new Promise((resolve, reject) => {
@@ -114,14 +122,15 @@ export const publicKeyOf = sk => bytesToHex(schnorr.getPublicKey(sk));
 
 export async function status() {
   const r = await get(RECORD);
-  return r ? { pubkey: r.pub, method: r.method, created: r.created, outdated: r.v !== VERSION } : null;
+  return r ? { pubkey: r.pub, method: r.method, created: r.created, address: r.address || null, outdated: r.v !== VERSION } : null;
 }
 
 // Creates and stores a new key. method 'prf' uses a passkey and falls back to the PIN when the
 // browser cannot; 'pin' uses the PIN. A PIN key is enrolled with the server before it is stored.
 export async function createKey({ pin, method = 'prf' } = {}, server) {
   if (await get(RECORD)) throw new Error('This device already has a key. Remove it before making another.');
-  const sk = schnorr.utils.randomSecretKey(), salt = random(32), pub = publicKeyOf(sk);
+  const sk = schnorr.utils.randomSecretKey(), salt = random(32), pub = publicKeyOf(sk), address = addressOf(sk);
+  const signWithKey = msg => bytesToHex(schnorr.sign(msg, sk));
   try {
     let inner, used = 'pin', credId = null;
     if (method === 'prf' && await prfAvailable()) {
@@ -133,13 +142,13 @@ export async function createKey({ pin, method = 'prf' } = {}, server) {
     if (used === 'pin') {
       if (!isPin(pin)) throw new Error(method === 'prf' ? 'A passkey did not work here. Choose a 6-digit PIN instead.' : 'Choose a 6-digit PIN.');
       const { bits, verifier } = await stretchPin(pin, salt);
-      const pepper = await server.register(pub, msg => bytesToHex(schnorr.sign(msg, sk)), verifier);
+      const pepper = await server.register(pub, signWithKey, verifier, address);
       inner = await pinKey(bits, pepper, salt);
-    } else await server.register(pub, msg => bytesToHex(schnorr.sign(msg, sk)), null);
+    } else await server.register(pub, signWithKey, null, address);
     const sealed = await seal(inner, sk);
     const outer = await seal(await deviceKey(), new Uint8Array([...sealed.iv, ...sealed.ct]));
-    await put(RECORD, { v: VERSION, pub, method: used, salt, credId, outer, created: new Date().toISOString() });
-    return { pubkey: pub, method: used };
+    await put(RECORD, { v: VERSION, pub, address, method: used, salt, credId, outer, created: new Date().toISOString() });
+    return { pubkey: pub, address, method: used };
   } finally { sk.fill(0); }
 }
 
@@ -159,6 +168,8 @@ export async function withSecret({ pin } = {}, server, fn) {
   let sk;
   try { sk = await unseal(inner, { iv: packed.slice(0, 12), ct: packed.slice(12) }); }
   catch { throw new Error('This key could not be opened on this device.'); }
+  // Keys made before wallets existed learn their address on first unlock.
+  if (!r.address) await put(RECORD, { ...r, address: addressOf(sk) });
   try { return await fn(sk, r.pub); } finally { sk.fill(0); }
 }
 
@@ -166,4 +177,22 @@ export async function sign(message, unlock, server) {
   return withSecret(unlock, server, sk => bytesToHex(schnorr.sign(message, sk)));
 }
 
+// A backup of this key as a file, encrypted with a passphrase the person chooses. Anyone with the
+// file and the passphrase controls this key and its DogeOS address.
+export async function exportKeyFile(unlock, server, passphrase) {
+  return withSecret(unlock, server, sk => sealKeyFile(sk, passphrase, { kind: 'lacrossetube-key', address: addressOf(sk) }));
+}
+
 export async function removeKey() { await del(RECORD); }
+
+// Trial slots: what each slot holds, and wiping one to stand in for a lost phone.
+export async function statusOf(id) {
+  if (!globalThis.indexedDB) return null;
+  const db = await open(id);
+  const r = db ? await idb(db, 'readonly', st => st.get(RECORD)) : null;
+  return r ? { pubkey: r.pub, address: r.address || null, method: r.method } : null;
+}
+export async function wipeSlot(id) {
+  const db = await open(id);
+  if (db) await idb(db, 'readwrite', st => st.clear());
+}

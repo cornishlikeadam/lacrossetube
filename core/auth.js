@@ -4,7 +4,7 @@
 // as a coach, or the /key test page. PIN keys also fetch their pepper on each unlock.
 import { sha256 } from '@noble/hashes/sha2.js';
 import { loginMessage } from '../supabase/functions/_shared/key-login-core.js';
-import { createKey, sign, status } from './keyring.js';
+import { createKey, sign, status, exportKeyFile } from './keyring.js';
 import { supabase } from './supabase.js';
 
 async function keyLogin(body) {
@@ -29,8 +29,8 @@ async function makeKeyVia(step, fields, opts) {
   let result = null;
   const server = {
     pepper,
-    async register(pubkey, signWithKey, verifier) {
-      result = await keyLogin({ step, ...(await signedChallenge(pubkey, signWithKey)), verifier, ...fields });
+    async register(pubkey, signWithKey, verifier, address) {
+      result = await keyLogin({ step, ...(await signedChallenge(pubkey, signWithKey)), verifier, address, ...fields });
       return result.pepper ?? null;
     },
   };
@@ -42,9 +42,9 @@ async function makeKeyVia(step, fields, opts) {
 // The /key test page: a PIN key enrolls; a passkey key registers on its first sign-in.
 export const makeKey = opts => createKey(opts, {
   pepper,
-  async register(pubkey, signWithKey, verifier) {
+  async register(pubkey, signWithKey, verifier, address) {
     if (verifier == null) return null;
-    return (await keyLogin({ step: 'enroll', ...(await signedChallenge(pubkey, signWithKey)), verifier })).pepper;
+    return (await keyLogin({ step: 'enroll', ...(await signedChallenge(pubkey, signWithKey)), verifier, address })).pepper;
   },
 });
 
@@ -59,10 +59,25 @@ export async function logInWithKey(unlock = {}) {
   if (!key) throw new Error('Make a key on this device first.');
   const { challenge } = await keyLogin({ step: 'challenge', pubkey: key.pubkey });
   const sig = await sign(loginMessage(challenge, sha256), unlock, { pepper });
-  const { session, personId } = await keyLogin({ step: 'verify', pubkey: key.pubkey, challenge, sig });
+  const address = (await status()).address;
+  const { session, personId } = await keyLogin({ step: 'verify', pubkey: key.pubkey, challenge, sig, address });
   await keepSession(session);
   return { personId, pubkey: key.pubkey };
 }
+
+// Downloads this device's key as a passphrase-encrypted file.
+export const keyFile = (unlock, passphrase) => exportKeyFile(unlock, { pepper }, passphrase);
+
+// Points to testnet DOGE (the redeem Edge Function).
+async function redeemCall(action) {
+  const { data, error } = await supabase.functions.invoke('redeem', { body: { action } });
+  if (!error) return data;
+  const detail = await error.context?.json?.().catch(() => null);
+  if (detail?.configured === false) return detail;
+  throw new Error(detail?.error || 'Could not reach redeem. Try again.');
+}
+export const redeemStatus = () => redeemCall('status');
+export const redeemPoints = () => redeemCall('redeem');
 
 export async function currentUser() {
   if (!supabase) return null;

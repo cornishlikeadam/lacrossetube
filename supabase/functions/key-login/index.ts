@@ -22,11 +22,13 @@
 // ALLOW_OPEN_KEY_SIGNUP secret equals this project's own ref (or "true" on a local stack), so the
 // switch cannot be copied to another project by accident. Test projects only.
 import { createClient } from 'npm:@supabase/supabase-js@2.118.0';
-import { schnorr } from 'npm:@noble/curves@2.4.0/secp256k1.js';
+import { schnorr, secp256k1 } from 'npm:@noble/curves@2.4.0/secp256k1.js';
 import { sha256 } from 'npm:@noble/hashes@2.4.0/sha2.js';
 import { hmac } from 'npm:@noble/hashes@2.4.0/hmac.js';
+import { keccak_256 } from 'npm:@noble/hashes@2.4.0/sha3.js';
 import { bytesToHex, hexToBytes } from 'npm:@noble/hashes@2.4.0/utils.js';
 import { keyLoginCore, KeyLoginError } from '../_shared/key-login-core.js';
+import { addressesForXOnly, isAddress } from '../_shared/evm.js';
 
 const URL = Deno.env.get('SUPABASE_URL');
 const firstSecret = (json?: string) => { try { return Object.values(JSON.parse(json || '{}'))[0] as string | undefined; } catch { return undefined; } };
@@ -53,6 +55,21 @@ function pinFields(verifier: unknown) {
   if (verifier == null) return { hash: null, pepper: null };
   return { hash: verifierHash(verifier), pepper: bytesToHex(crypto.getRandomValues(new Uint8Array(32))) };
 }
+// The key's DogeOS address, sent by the device that made the key. It must be one of the two
+// addresses the key's x-only public key allows; anything else is refused.
+function keyAddress(address: unknown, pub: string) {
+  if (address == null) return null;
+  if (!isAddress(address)) throw new KeyLoginError('Bad wallet address.', 400);
+  const match = addressesForXOnly(pub, { secp256k1, keccak: keccak_256 }).find(a => a.toLowerCase() === String(address).toLowerCase());
+  if (!match) throw new KeyLoginError('That wallet address does not belong to this key.', 400);
+  return match;
+}
+async function recordAddress(db: Db, pub: string, address: string | null) {
+  if (!address) return;
+  const { error } = await db.from('keys').update({ evm_address: address }).eq('pubkey', pub).is('evm_address', null);
+  if (error) throw error;
+}
+
 // Postgres errors raised on purpose by the roster functions carry a message meant for people.
 function sqlError(e: { code?: string; message?: string }) {
   if (e.code === '23505') return new KeyLoginError('This key is already registered. Remove it from this device and try again.', 409);
@@ -137,7 +154,7 @@ async function sessionFor(db: Db, userId: string, personId: string) {
 }
 
 type Body = {
-  step?: string; pubkey?: string; challenge?: string; sig?: string; verifier?: string; code?: string; consent?: boolean;
+  step?: string; pubkey?: string; challenge?: string; sig?: string; verifier?: string; code?: string; consent?: boolean; address?: string;
   coach?: { first_name?: string; last_initial?: string; email?: string }; team?: { name?: string; city?: string };
 };
 
@@ -151,8 +168,10 @@ async function handle(body: Body, ip: string) {
     case 'verify': {
       await limit(db, `ip:${ip}:verify`, LIMITS.verify);
       const { pub, iat } = core.check(body.challenge, body.sig, body.pubkey);
+      const address = keyAddress(body.address, pub);
       await limit(db, `key:${pub}:verify`, LIMITS.keyVerify);
       const person = await claimChallenge(db, pub, iat);
+      await recordAddress(db, pub, address);
       const userId = await authUserFor(db, person);
       return { session: await sessionFor(db, userId, person.id), personId: person.id, pubkey: pub };
     }
@@ -160,7 +179,9 @@ async function handle(body: Body, ip: string) {
       await limit(db, `ip:${ip}:enroll`, LIMITS.enroll);
       const hash = verifierHash(body.verifier);
       const { pub, iat } = core.check(body.challenge, body.sig, body.pubkey);
+      const address = keyAddress(body.address, pub);
       await claimChallenge(db, pub, iat);
+      await recordAddress(db, pub, address);
       const pepper = bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
       const { data, error } = await db.from('keys').update({ pin_verifier_hash: hash, pin_pepper: pepper, pin_fails: 0, pin_locked_until: null })
         .eq('pubkey', pub).is('pin_verifier_hash', null).select('pubkey');
@@ -188,6 +209,7 @@ async function handle(body: Body, ip: string) {
       if (!TEAM.test(String(team.name ?? '').trim()) || !CITY.test(String(team.city ?? ''))) throw new KeyLoginError('Give the team name and city.', 400);
       const pin = pinFields(body.verifier);
       const { pub, iat } = core.check(body.challenge, body.sig, body.pubkey);
+      const address = keyAddress(body.address, pub);
       const { data, error } = await db.rpc('apply_team', {
         p_pubkey: pub, p_login_at: new Date(iat).toISOString(), p_verifier_hash: pin.hash, p_pepper: pin.pepper,
         p_first_name: String(coach.first_name).trim(), p_last_initial: String(coach.last_initial), p_email: String(coach.email ?? ''),
@@ -195,6 +217,7 @@ async function handle(body: Body, ip: string) {
       });
       if (error) throw sqlError(error);
       const { person_id: personId, org_id: orgId } = data[0];
+      await recordAddress(db, pub, address);
       const userId = await authUserFor(db, { id: personId, auth_user_id: null });
       return { pepper: pin.pepper, session: await sessionFor(db, userId, personId), personId, orgId, pubkey: pub };
     }
@@ -209,11 +232,13 @@ async function handle(body: Body, ip: string) {
       await limit(db, `ip:${ip}:invite-accept`, LIMITS.inviteAccept);
       const hash = codeHash(body.code), pin = pinFields(body.verifier);
       const { pub, iat } = core.check(body.challenge, body.sig, body.pubkey);
+      const address = keyAddress(body.address, pub);
       const { data: personId, error } = await db.rpc('accept_invite', {
         p_code_hash: hash, p_pubkey: pub, p_login_at: new Date(iat).toISOString(),
         p_verifier_hash: pin.hash, p_pepper: pin.pepper, p_consent: body.consent === true,
       });
       if (error) throw sqlError(error);
+      await recordAddress(db, pub, address);
       const { data: person, error: personErr } = await db.from('people').select('id, auth_user_id').eq('id', personId).single();
       if (personErr) throw personErr;
       const userId = await authUserFor(db, person);

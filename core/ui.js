@@ -7,7 +7,6 @@ import { positionOf } from '../field/positions.js';
 
 export const $ = id => document.getElementById(id);
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-export const BAND = { u13: 'U13', '13_17': '13–17', '18_plus': '18+' };
 export const ROLE = { player: 'Player', coach: 'Coach', treasurer: 'Treasurer', parent: 'Parent', admin: 'Admin' };
 export const positionLabel = id => (id ? positionOf('lacrosse', id).label : '');
 
@@ -78,14 +77,12 @@ export function presetPickers({ avatar, skin, xp }) {
     }).join('')}</div></fieldset>`;
 }
 
-// Socials: links only, 13+ only. 13-17 are team-only until the player and a parent both say public.
+// Socials: links only, on five sites. Teammates see them; outside the team only if you say so.
 export function socialsFields(person) {
-  if (person.age_band === 'u13') return '';
-  const teen = person.age_band === '13_17';
   return `<fieldset class="presets"><legend>Links (optional)</legend>
-    <p class="hint">Links only. Nobody can message you here.${teen ? ' Your teammates see them. Showing them outside your team needs you and a parent to switch it on.' : ''}</p>
+    <p class="hint">Links only. Nobody can message you here. Your teammates see them.</p>
     ${SOCIALS.map(s => `<label class="field" for="so-${s.id}">${s.label}<input id="so-${s.id}" type="url" inputmode="url" autocomplete="off" placeholder="${s.hint}" value="${esc(person.socials?.[s.id] || '')}"></label>`).join('')}
-    <label class="check"><input type="checkbox" id="so-public"${person.socials_public_self ? ' checked' : ''}> Show my links outside my team${teen ? ' (a parent also has to agree)' : ''}</label>
+    <label class="check"><input type="checkbox" id="so-public"${person.socials_public_self ? ' checked' : ''}> Show my links outside my team</label>
     </fieldset>`;
 }
 export function readSocials(root) {

@@ -73,3 +73,25 @@ details.offline-roster summary h2{display:inline-flex}
   body.print-sheet .sheet-grid{grid-template-columns:repeat(2,1fr);gap:8mm}
   body.print-sheet .invite-card{border:1px solid #999}
 }
+
+/* Preview trial, owner page and the wallet card. */
+.trial-line{font-size:13px;color:var(--ink-soft);border-left:3px solid var(--cont);padding-left:8px}
+.slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.slot{background:#0a0f22;border:2px solid rgba(255,255,255,.1);padding:10px;display:grid;gap:2px}
+.slot b{font-family:var(--f-hud);font-size:13px;letter-spacing:.08em}
+.slot span,.slot small{font-size:13px;color:var(--ink-soft)}
+.slot code{font-size:12px}
+.steps{display:grid;gap:12px;padding-left:22px;margin:0}
+.steps > li{display:grid;gap:8px}
+.steps h2{font-family:var(--f-hud);font-size:15px;letter-spacing:.06em}
+.steps > li.done h2::after{content:" ✓";color:var(--green)}
+.invites,.apps,.receipts{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.invites li,.apps li{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:#0a0f22;border:2px solid rgba(255,255,255,.1);padding:10px}
+.apps small{color:var(--ink-soft)}
+.wallet{display:grid;gap:8px;background:#0a0f22;border:2px solid rgba(255,255,255,.1);padding:12px}
+.addr{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.addr code{font-size:14px;word-break:break-all}
+.not-configured{font-family:var(--f-hud);font-size:13px;letter-spacing:.06em;color:var(--ink-soft);border:2px dashed rgba(255,255,255,.2);padding:8px 10px;justify-self:start}
+.warn-line{font-size:14px;border-left:4px solid var(--start);padding-left:10px}
+.receipts li{font-size:14px;color:var(--ink-soft)}
+.linkish{background:none;border:0;color:var(--cont);text-decoration:underline;cursor:pointer;padding:0;font-size:inherit}

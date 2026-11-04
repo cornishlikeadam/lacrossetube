@@ -8,15 +8,20 @@ import { cpSync, existsSync } from 'node:fs';
 
 const root = import.meta.dirname;
 const PAGES = ['index', 'play', 'coach', 'key', 'join', 'team', 'placement'];
+// The preview trial (trial hub and owner page) is built only when the build points at the
+// lacrossetube-dev project or a local Supabase stack. Production builds never contain it.
+const DEV_PROJECT = 'xeildwwpwfgficrqziph';
+const TRIAL_PAGES = ['trial', 'owner'];
+const isTrialTarget = url => url === `https://${DEV_PROJECT}.supabase.co` || /^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url);
 const RUNTIME_DIRS = ['data', 'js', 'samples', 'blog'];
 
 // Vercel serves /play for play.html (cleanUrls); the dev server should too.
-const cleanUrls = () => ({
+const cleanUrls = pages => ({
   name: 'lt-clean-urls',
   configureServer(server) {
     server.middlewares.use((req, _res, next) => {
       const path = req.url.split('?')[0];
-      if (PAGES.includes(path.slice(1))) req.url = req.url.replace(path, path + '.html');
+      if (pages.includes(path.slice(1))) req.url = req.url.replace(path, path + '.html');
       next();
     });
   },
@@ -32,17 +37,20 @@ const copyRuntime = () => ({
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, root, '');
+  const trial = isTrialTarget(env.SUPABASE_URL || '');
+  const pages = trial ? [...PAGES, ...TRIAL_PAGES] : PAGES;
   return {
     publicDir: false,
     define: {
       __LT_SUPABASE_URL__: JSON.stringify(env.SUPABASE_URL || ''),
       __LT_SUPABASE_ANON_KEY__: JSON.stringify(env.SUPABASE_ANON_KEY || ''),
+      __LT_TRIAL__: JSON.stringify(trial),
     },
     build: {
       outDir: 'dist',
       emptyOutDir: true,
-      rolldownOptions: { input: Object.fromEntries(PAGES.map(p => [p, resolve(root, `${p}.html`)])) },
+      rolldownOptions: { input: Object.fromEntries(pages.map(p => [p, resolve(root, `${p}.html`)])) },
     },
-    plugins: [cleanUrls(), copyRuntime()],
+    plugins: [cleanUrls(pages), copyRuntime()],
   };
 });

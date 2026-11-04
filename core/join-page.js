@@ -5,6 +5,7 @@ import { inviteInfo, joinWithInvite, rpc } from './auth.js';
 import { supabase } from './supabase.js';
 import { $, esc, busy, keyMaker, ROLE, positionLabel, avatarGlyph, presetPickers, socialsFields, readSocials } from './ui.js';
 import { TRIAL, slot, slotLabel, markInviteUsed } from './trial.js';
+import { mountPortal } from './portal.js';
 
 const root = $('join');
 const KEEP = 'lt-invite';
@@ -14,7 +15,8 @@ const code = (() => {
   if (fromHash) { sessionStorage.setItem(KEEP, fromHash); history.replaceState(null, '', location.pathname); }
   return fromHash || sessionStorage.getItem(KEEP);
 })();
-const trialLine = TRIAL ? `<p class="trial-line">Preview trial · joining as ${esc(slotLabel(slot))} on this browser · <a href="/trial">trial page</a></p>` : '';
+mountPortal('player');
+const trialLine = TRIAL ? `<p class="trial-line">Preview trial · joining as ${esc(slotLabel(slot))}</p>` : '';
 
 async function start() {
   if (!supabase) return fail('Team accounts are not switched on for this site.');

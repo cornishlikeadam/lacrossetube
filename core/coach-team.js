@@ -6,11 +6,12 @@ import { supabase } from './supabase.js';
 import { status } from './keyring.js';
 import { applyAsCoach, rpc, logOut } from './auth.js';
 import { $, esc, say, busy, keyMaker, ensureSignedIn, ROLE, positionLabel } from './ui.js';
-import { TRIAL, slot, slotLabel, rememberInvite } from './trial.js';
+import { TRIAL, rememberInvite } from './trial.js';
+import { mountPortal, signInChoice } from './portal.js';
 import { POSITIONS } from '../field/positions.js';
 
 const root = $('team-body');
-if (TRIAL) root.insertAdjacentHTML('beforebegin', `<p class="trial-line">Preview trial · ${esc(slotLabel(slot))} on this browser · <a href="/trial">trial page</a></p>`);
+mountPortal('coach');
 const day = iso => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 const inviteUrl = code => `${location.origin}/join#i=${code}`;
 // In the preview trial the coach desk remembers the links it makes, so the trial page can open them.
@@ -22,7 +23,7 @@ async function boot() {
   if (!(await ensureSignedIn(root))) return paintApply();
   const home = await rpc('team_home');
   const team = home?.teams.find(t => t.role === 'coach' || t.role === 'admin');
-  if (!team) { root.innerHTML = `<p class="hint">The key on this device is not a coach on any team. <a href="/team">Go to your team page</a>.</p>`; return; }
+  if (!team) return signInChoice(root, 'The key signed in here belongs to a player, not a coach. Coaches sign in here; players use the player portal.');
   if (!team.verified) return paintPending(team);
   paintRoster(team);
 }
@@ -56,7 +57,7 @@ function paintPending(team) {
     ${TRIAL ? '<p><a class="btn" href="/owner">APPROVE IT ON THE OWNER PAGE</a></p>' : ''}
     <div class="row"><button class="btn alt" type="button" id="pd-check">CHECK AGAIN</button><button class="ghost" type="button" id="pd-out">Sign out</button></div>`;
   $('pd-check').addEventListener('click', boot);
-  $('pd-out').addEventListener('click', async () => { await logOut(); boot(); });
+  $('pd-out').addEventListener('click', async () => { await logOut(); signInChoice(root); });
 }
 
 /* ---------- roster ---------- */
@@ -113,7 +114,7 @@ async function paintRoster(team) {
     showSheet(team, sheet);
     await paintRoster(team);
   }));
-  $('rs-out').addEventListener('click', async () => { await logOut(); boot(); });
+  $('rs-out').addEventListener('click', async () => { await logOut(); signInChoice(root); });
 }
 
 /* ---------- printable QR sheet ---------- */

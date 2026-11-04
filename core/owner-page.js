@@ -1,8 +1,8 @@
-// /owner (preview trial builds only): approve team applications with a button. The button signs
-// with the owner key that `node scripts/owner.mjs init` made. The key file is opened here, in the
-// browser, with its passphrase once; it is never uploaded. This browser then keeps the key locked
-// under a device key that cannot be exported, so each approval after that is one click. The server
-// checks the owner signature exactly as it does for the CLI; nothing about that is relaxed.
+// /owner: approve team applications with a button that signs with the owner key that
+// `node scripts/owner.mjs init` made. The key file is opened here, in the browser, with its
+// passphrase; it is never uploaded. On the preview trial this browser then keeps the key locked
+// under a device key that cannot be exported, so later visits need no passphrase. On a live site
+// the key is held only while the page is open. The server checks the owner signature either way.
 import { schnorr } from '@noble/curves/secp256k1.js';
 import { bytesToHex } from '@noble/curves/utils.js';
 import { sha256 } from '@noble/hashes/sha2.js';
@@ -11,6 +11,9 @@ import { openKeyFile } from './keyfile.js';
 import { supabase } from './supabase.js';
 import { TRIAL } from './trial.js';
 import { $, esc, say, busy } from './ui.js';
+import { mountPortal } from './portal.js';
+
+mountPortal('owner');
 
 const root = $('owner');
 const DB = 'lacrossetube-owner', STORE = 'kv';
@@ -24,12 +27,14 @@ function idb(mode, fn) {
     req.onsuccess = () => { const tx = req.result.transaction(STORE, mode), r = fn(tx.objectStore(STORE)); tx.oncomplete = () => resolve(r?.result); tx.onerror = () => reject(tx.error); };
   });
 }
-const kept = () => idb('readonly', s => s.get('owner'));
+let held = null;
+const kept = async () => (TRIAL ? idb('readonly', s => s.get('owner')) : held);
 async function keep(sk, pubkey) {
   const device = await subtle().generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = new Uint8Array(await subtle().encrypt({ name: 'AES-GCM', iv }, device, sk));
-  await idb('readwrite', s => s.put({ pubkey, device, iv, ct }, 'owner'));
+  if (TRIAL) await idb('readwrite', s => s.put({ pubkey, device, iv, ct }, 'owner'));
+  else held = { pubkey, device, iv, ct };
 }
 async function withOwnerKey(fn) {
   const k = await kept();
@@ -48,7 +53,7 @@ async function ownerCall(sk, action, payload) {
 }
 
 async function start() {
-  if (!TRIAL || !supabase) { root.innerHTML = '<p class="msg err">The owner page is only on the preview trial.</p>'; return; }
+  if (!supabase) { root.innerHTML = '<p class="msg err">Team accounts are not switched on for this site.</p>'; return; }
   const k = await kept();
   if (!k) return paintLoad();
   paintPending(k.pubkey);
@@ -56,7 +61,7 @@ async function start() {
 
 function paintLoad() {
   root.innerHTML = `<p class="kicker">OWNER</p><h1>Approve teams</h1>
-    <p>Once per browser, give this page the owner key that <code>node scripts/owner.mjs init</code> made, and its passphrase. It is the file <code>~/.lacrossetube/owner-key.json</code>, still locked with your passphrase.</p>
+    <p>${TRIAL ? 'Once per browser' : 'Each visit'}, give this page the owner key that <code>node scripts/owner.mjs init</code> made, and its passphrase. It is the file <code>~/.lacrossetube/owner-key.json</code>, still locked with your passphrase.</p>
     <p class="hint">The easy way: in Terminal run <code>pbcopy &lt; ~/.lacrossetube/owner-key.json</code>, then paste below. The key is opened here and never uploaded. After this, this browser keeps it locked to itself, so approving is one click.</p>
     <label class="field" for="ow-paste">Paste the owner key file<textarea id="ow-paste" rows="4" spellcheck="false" autocomplete="off" placeholder='{ "v": 1, "pubkey": "…" }'></textarea></label>
     <label class="field" for="ow-file">Or choose the file<input id="ow-file" type="file" accept=".json,application/json"></label>
@@ -92,14 +97,14 @@ async function paintPending(pubkey) {
         <button class="btn" type="button" data-approve>APPROVE</button></li>`).join('')}</ul>`
       : '<p class="empty">No teams waiting. When a coach applies on the coach desk, it shows up here.</p>'}
     <p class="msg" id="ow-msg" role="status" hidden></p>
-    <div class="row"><button class="ghost" type="button" id="ow-refresh">Refresh</button><a class="ghost" href="/trial">Trial page</a><button class="ghost" type="button" id="ow-forget">Forget owner key on this browser</button></div>`;
+    <div class="row"><button class="ghost" type="button" id="ow-refresh">Refresh</button>${TRIAL ? '<a class="ghost" href="/trial">Trial page</a>' : ''}<button class="ghost" type="button" id="ow-forget">${TRIAL ? 'Forget owner key on this browser' : 'Lock'}</button></div>`;
   root.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', e => busy(e.currentTarget, $('ow-msg'), async () => {
     const li = e.currentTarget.closest('li');
     const { verified } = await withOwnerKey(sk => ownerCall(sk, 'verify_org', { org_id: li.dataset.org }));
     li.innerHTML = `<div><b>${esc(verified)}</b><br><small>Approved. The coach can add players now.</small></div>`;
   })));
   $('ow-refresh').addEventListener('click', () => paintPending(pubkey));
-  $('ow-forget').addEventListener('click', async () => { await idb('readwrite', s => s.delete('owner')); start(); });
+  $('ow-forget').addEventListener('click', async () => { held = null; if (TRIAL) await idb('readwrite', s => s.delete('owner')); start(); });
 }
 
 start().catch(e => { root.innerHTML = `<p class="msg err">${esc(e.message)}</p>`; });

@@ -34,6 +34,8 @@ async function start() {
   if (!TRIAL) { root.innerHTML = '<p class="msg err">The trial page only exists on the preview build.</p>'; return; }
   const states = await Promise.all(PEOPLE.map(p => slotState(p.id)));
   const coach = states[0].home, team = coach?.teams.find(t => t.role === 'coach');
+  const coachOut = states[0].key && !coach;
+  const coachNote = coachOut ? '<p class="msg err">The coach is signed out. Sign in as Coach first (the button below, or "Trial as" at the top).</p>' : '';
   const invites = trialInvites().filter(i => !team || i.team === team.name);
   const freeSlots = states.slice(1).filter(s => !s.key).map(s => s.id);
   const roster = team?.verified ? await coachRpc('roster_for_coach', { p_org: team.org_id }).catch(() => []) : [];
@@ -51,8 +53,8 @@ async function start() {
 
     <ol class="steps">
       <li class="${team ? 'done' : ''}"><h2>Apply as a coach</h2>
-        ${team ? `<p>${esc(team.name)} applied.</p>` : '<p>Make the coach key and apply. The form is filled in for the trial.</p>'}
-        <button class="btn${team ? ' alt' : ''}" type="button" data-go="coach:/coach">${team ? 'OPEN COACH DESK' : 'APPLY AS COACH'}</button></li>
+        ${team ? `<p>${esc(team.name)} applied.</p>` : coachOut ? coachNote : '<p>Make the coach key and apply. The form is filled in for the trial.</p>'}
+        <button class="btn${team ? ' alt' : ''}" type="button" data-go="coach:/coach">${team ? 'OPEN COACH DESK' : coachOut ? 'SIGN IN AS COACH' : 'APPLY AS COACH'}</button></li>
       <li class="${team?.verified ? 'done' : ''}"><h2>Approve the team</h2>
         <p>${team?.verified ? 'Approved with the owner key.' : 'On the owner page, approve it with your owner key.'}</p>
         <a class="btn${team?.verified ? ' alt' : ''}" href="/owner">OWNER PAGE</a></li>
@@ -69,8 +71,8 @@ async function start() {
               : target ? `<button class="btn" type="button" data-go="${target}:${esc(i.link)}">OPEN AS ${esc(PEOPLE.find(p => p.id === target).label.toUpperCase())}</button>` : '<small>No empty slot</small>'}</li>`;
         }).join('')}</ul>` : '<p class="hint">Invites appear here once the coach makes them.</p>'}</li>
       <li><h2>Reissue a lost key</h2>
-        <p>Wipes that player's slot (a lost phone), turns off their key, makes a new invite and opens it. Same person, points and rating; a new DogeOS address.</p>
-        <div class="row">${invites.filter(i => i.used).map(i => `<button class="ghost" type="button" data-lose="${esc(i.person)}" data-slot="${i.by}" data-name="${esc(i.name)}">Lose ${esc(PEOPLE.find(p => p.id === i.by)?.label)}'s phone</button>`).join('') || '<span class="hint">After a player joins.</span>'}</div></li>
+        <p>Wipes that player's slot (a lost phone), turns off their key, makes a new invite and opens it. Same person, points and rating; a new DogeOS address.</p>${coachOut ? coachNote : ''}
+        <div class="row">${invites.filter(i => i.used).map(i => `<button class="ghost" type="button"${team ? '' : ' disabled'} data-lose="${esc(i.person)}" data-slot="${i.by}" data-name="${esc(i.name)}">Lose ${esc(PEOPLE.find(p => p.id === i.by)?.label)}'s phone</button>`).join('') || '<span class="hint">After a player joins.</span>'}</div></li>
     </ol>
     <p class="msg" id="tr-msg" role="status" hidden></p>
     <p class="hint">Chain: ${esc(CHAIN.name)} (${CHAIN.id}). <button class="linkish" type="button" id="tr-reset">Start the trial over on this browser</button></p>`;

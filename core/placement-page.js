@@ -2,53 +2,19 @@
 // existing games and graded with the existing local rules. The five grades go to the server once
 // (placement_submit) and seed the player's concept ratings from 500. Practice stays on the device:
 // the plays also count toward this device's XP and streak, as in the player app.
-import { C, readColors, View, VIEW, clamp } from '../field/ink.js';
-import { SPORTS } from '../field/sports.js';
-import { gameFor, banner, XP } from '../field/games.js';
+import { readColors } from '../field/ink.js';
+import { Round } from './round.js';
 import { loadLibrary, pickLibraryItems } from '../field/ideas.js';
 import { applyResult } from '../field/progress.js';
 import { loadProfile, saveProfile } from '../field/db.js';
 import { rpc } from './auth.js';
 import { supabase } from './supabase.js';
 import { $, esc, ensureSignedIn, positionLabel } from './ui.js';
+import { mountPortal } from './portal.js';
+
+mountPortal('player');
 
 const root = $('placement');
-const DPR = Math.min(window.devicePixelRatio || 1, 2);
-const ASPECT = (VIEW.y1 - VIEW.y0) / (VIEW.x1 - VIEW.x0);
-const sp = SPORTS.lacrosse;
-
-// One game at a time on one canvas, like the player app's frames in game mode.
-class Round {
-  constructor(cv, item, onResult) {
-    Object.assign(this, { cv, ctx: cv.getContext('2d'), item, onResult, w: 0, gt: 0, last: 0, raf: 0, game: gameFor(item, sp), doneAt: null });
-    new ResizeObserver(() => this.resize()).observe(cv);
-    cv.addEventListener('pointerdown', e => this.down(e));
-    cv.addEventListener('pointerup', () => this.game.up?.(this.gt));
-    cv.addEventListener('pointercancel', () => this.game.up?.(this.gt));
-    this.last = performance.now(); this.raf = requestAnimationFrame(n => this.tick(n));
-  }
-  resize() { const w = this.cv.clientWidth; if (!w || w === this.w) return; this.w = w; this.h = Math.round(w * ASPECT); this.cv.style.height = this.h + 'px'; this.cv.width = Math.round(w * DPR); this.cv.height = Math.round(this.h * DPR); }
-  field(e) { const r = this.cv.getBoundingClientRect(), s = r.width / (VIEW.x1 - VIEW.x0); return { p: { x: (e.clientX - r.left) / s + VIEW.x0, y: (e.clientY - r.top) / s + VIEW.y0 }, sx: e.clientX - r.left, sy: e.clientY - r.top }; }
-  tick(now) {
-    this.gt += clamp((now - this.last) / 1000, 0, .1); this.last = now;
-    if (this.w) {
-      const ctx = this.ctx; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      ctx.fillStyle = C.field; ctx.fillRect(0, 0, this.w, this.h);
-      const v = new View(ctx, this.w); sp.draw(v); this.game.draw(ctx, v, this.w, this.h, this.gt);
-      if (this.game.result) {
-        if (this.doneAt == null) { this.doneAt = this.gt; this.onResult(this.game.result.g); }
-        if (this.gt - this.doneAt > .5) banner(ctx, this.w, this.h, this.game.result.g, this.game.result.msg, XP[this.game.result.g]);
-      }
-    }
-    if (this.doneAt == null || this.gt - this.doneAt < 1.5) this.raf = requestAnimationFrame(n => this.tick(n));
-  }
-  down(e) {
-    if (this.game.result) return;
-    try { this.cv.setPointerCapture(e.pointerId); } catch { /* not all pointers capture */ }
-    const f = this.field(e); this.game.down(f.p, f.sx, f.sy, this.gt);
-  }
-  stop() { cancelAnimationFrame(this.raf); }
-}
 
 async function start() {
   if (!supabase) { root.innerHTML = '<p class="msg err">Team accounts are not switched on for this site.</p>'; return; }
@@ -87,9 +53,10 @@ async function start() {
     root.innerHTML = '<p class="hint">Saving your placement…</p>';
     const seed = await rpc('placement_submit', { p_results: grades });
     const passed = grades.filter(g => g.grade !== 'miss').length;
-    root.innerHTML = `<p class="kicker">PLACEMENT DONE</p><h1>Seed rating ${Math.round(seed)}</h1>
+    root.innerHTML = `<p class="kicker">PLACEMENT DONE · WARRIOR TIER 1 PASSED</p><h1>Seed rating ${Math.round(seed)}</h1>
       <p>${passed} of 5 passed. Every concept starts at 500; this round moved the five you played. It seeds your team rank.</p>
-      <div class="row"><a class="btn" href="/team">MY TEAM PAGE ▶</a></div>`;
+      <p><b>+1,000 points</b> (1 DOGE on testnet). Tier 2, Rules &amp; Field IQ, is open on your team page.</p>
+      <div class="row"><a class="btn" href="/team">MY TEAM PAGE ▶</a><a class="btn alt" href="/test?tier=2">TIER 2 ▶</a></div>`;
   };
 
   root.innerHTML = `<p class="kicker">PLACEMENT ROUND</p><h1>Five quick challenges</h1>

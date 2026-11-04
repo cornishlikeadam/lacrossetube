@@ -96,3 +96,45 @@ details.offline-roster summary h2{display:inline-flex}
 .receipts li{font-size:14px;color:var(--ink-soft)}
 .linkish{background:none;border:0;color:var(--cont);text-decoration:underline;cursor:pointer;padding:0;font-size:inherit}
 .field textarea{font:13px ui-monospace,Menlo,monospace;color:var(--ink);background:#05070f;border:2px solid rgba(255,255,255,.2);padding:10px 12px;width:100%;resize:vertical}
+
+/* Warrior Tests */
+.q-prompt{font-size:20px;line-height:1.35}
+.choices{display:grid;gap:8px}
+.choice{position:relative;cursor:pointer}
+.choice input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.choice span{display:block;padding:12px 14px;background:#0a0f22;border:2px solid rgba(255,255,255,.14)}
+.choice input:checked + span{border-color:var(--gold);background:rgba(255,216,74,.1)}
+.choice input:focus-visible + span{outline:2px solid var(--cont);outline-offset:2px}
+.q-results{display:grid;gap:8px;padding-left:20px;margin:0}
+.q-results .right b{color:var(--green)}
+.q-results .wrong b{color:var(--stop)}
+.q-results small{color:var(--ink-soft)}
+.tiers{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.tiers li{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:#0a0f22;border:2px solid rgba(255,255,255,.1);padding:10px 12px}
+.tiers li.passed{border-color:rgba(83,224,90,.5)}
+.tiers li.locked{opacity:.6}
+.tiers small{display:block;color:var(--ink-soft);font-size:13px}
+.tier-total{font-size:14px;color:var(--ink-soft)}
+
+/* Portals: coach (blue), player (orange), owner (purple). */
+.portal-tag{font-family:var(--f-hud);font-size:11px;letter-spacing:.14em;padding:3px 8px;white-space:nowrap}
+.hud .switcher{display:flex;align-items:center;gap:6px;margin-left:auto;font-family:var(--f-hud);font-size:11px;letter-spacing:.08em;color:var(--ink-soft);white-space:nowrap}
+.hud .switcher select{font:13px var(--f-body);color:var(--ink);background:#05070f;border:2px solid rgba(255,255,255,.25);padding:4px 6px;max-width:140px}
+.hud nav.switcher .pill{font-size:12px}
+body.portal-player .hud{border-bottom:3px solid #ffb020}
+body.portal-player .portal-tag{background:var(--leg);color:#1a0f00}
+body.portal-coach{--gold:#5ad1ff;--start:#39b9ff}
+body.portal-coach .hud{border-bottom:3px solid #39b9ff}
+body.portal-coach .portal-tag{background:var(--meta);color:#04122a}
+body.portal-coach .btn:not(.alt){background:var(--meta);color:#04122a}
+body.portal-coach .panel{border-color:rgba(57,185,255,.35)}
+body.portal-owner{--gold:#d4a6ff}
+body.portal-owner .hud{border-bottom:3px solid #b45cff}
+body.portal-owner .portal-tag{background:#b45cff;color:#fff}
+body.portal-owner .btn:not(.alt){background:linear-gradient(135deg,#b45cff,#7a3dff);color:#fff}
+.portal-choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.portal-card{display:grid;gap:4px;text-align:left;text-decoration:none;color:var(--ink);font:inherit;cursor:pointer;padding:16px;border:2px solid rgba(255,255,255,.15);background:#0a0f22}
+.portal-card b{font-family:var(--f-pop);font-size:26px}
+.portal-card span{font-size:14px;color:var(--ink-soft)}
+.portal-card.coach{border-left:6px solid #39b9ff}
+.portal-card.player{border-left:6px solid #ffb020}

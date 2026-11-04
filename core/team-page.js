@@ -9,17 +9,19 @@ import { loadProfile } from '../field/db.js';
 import { CHAIN, POINTS, addressUrl, txUrl, pointsToWei, formatDoge } from '../supabase/functions/_shared/chain.js';
 import { download } from './keyfile.js';
 import { TRIAL, slot, slotLabel } from './trial.js';
+import { mountPortal, signInChoice } from './portal.js';
 import { $, esc, say, busy, ensureSignedIn, ROLE, positionLabel, avatarGlyph, presetPickers, socialsFields, readSocials } from './ui.js';
 
 const root = $('team');
 const ordinal = n => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
-const trialLine = TRIAL ? `<p class="trial-line">Preview trial · ${esc(slotLabel(slot))} on this browser · <a href="/trial">trial page</a></p>` : '';
+const trialLine = TRIAL ? `<p class="trial-line">Preview trial · ${esc(slotLabel(slot))}</p>` : '';
+mountPortal('player');
 
 async function start() {
   if (!supabase) return paint('<p class="msg err">Team accounts are not switched on for this site.</p>');
-  if (!(await status())) return paint(`${trialLine}<h1>My team</h1><p>Join from the invite your coach gives you. Coaches start on the <a href="/coach">coach desk</a>.</p>`);
+  if (!(await status())) return signInChoice(root, TRIAL ? `${slotLabel(slot)} has no key yet. Open an invite for them on the trial page, or pick someone else.` : 'Players join from the invite their coach gives them. Coaches use the coach desk.');
   if (!(await ensureSignedIn(root))) return;
-  const [home, device, key, redeem] = await Promise.all([rpc('team_home'), loadProfile(), status(), redeemStatus().catch(() => ({ configured: false }))]);
+  const [home, device, key, redeem, tiers] = await Promise.all([rpc('team_home'), loadProfile(), status(), redeemStatus().catch(() => ({ configured: false })), rpc('warrior_board')]);
   const p = home.person, w = home.wallet, teams = home.teams;
   const t = teams.find(x => x.role === 'player') || teams[0];
   const isPlayer = t?.role === 'player', streak = liveStreak(device);
@@ -36,7 +38,12 @@ async function start() {
       <div class="stat"><b>${w.points}</b><small>points</small></div>
       ${streak ? `<div class="stat"><b>${streak}</b><small>day streak on this device</small></div>` : ''}
     </div>
-    ${p.placed ? '' : '<div class="row"><a class="btn" href="/placement">START PLACEMENT ▶</a></div>'}` : ''}
+    <h2 class="sub">Warrior Tests</h2>
+    <p class="tier-total">Five tiers, five questions each. Pass a tier to open the next. All five pay ${(tiers.reduce((n, x) => n + x.reward_points, 0) / POINTS.perDoge).toLocaleString()} DOGE in points (testnet).</p>
+    <ol class="tiers">${tiers.map(x => `<li class="${x.passed ? 'passed' : x.unlocked ? '' : 'locked'}">
+      <div><b>Tier ${x.level} · ${esc(x.name)}</b><small>${x.kind === 'quiz' ? 'Quiz' : 'Field games'} · ${(x.reward_points / POINTS.perDoge).toLocaleString()} DOGE · ${x.passed ? `passed, best ${x.best_score} of 5` : x.unlocked ? `pass with ${x.pass_score} of 5` : `pass tier ${x.level - 1} first`}</small></div>
+      ${x.unlocked ? `<a class="btn${x.passed ? ' alt' : ''}" href="${x.level === 1 ? (p.placed ? '/team' : '/placement') : `/test?tier=${x.level}`}">${x.passed ? (x.level === 1 ? 'DONE' : 'PLAY AGAIN') : 'START ▶'}</a>` : '<span aria-label="Locked">🔒</span>'}
+    </li>`).join('')}</ol>` : ''}
     ${t ? `<h2 class="sub">From your coach</h2>
       ${t.has_session ? '<p>Your coach posted a session. It opens here when the coach desk goes live.</p>' : '<p class="empty">No session from your coach yet. When they post one after a meeting, it shows up here.</p>'}` : ''}
 
@@ -96,7 +103,7 @@ async function start() {
     download(`lacrossetube-key-${file.address.slice(2, 10).toLowerCase()}.json`, file);
     say($('kf-msg'), 'Downloaded. Keep the file and its passphrase somewhere safe.', 'ok');
   }));
-  $('tm-out').addEventListener('click', async () => { await logOut(); start(); });
+  $('tm-out').addEventListener('click', async () => { await logOut(); signInChoice(root); });
 }
 
 function paint(html) { root.innerHTML = html; }

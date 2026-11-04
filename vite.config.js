@@ -7,11 +7,11 @@ import { resolve } from 'node:path';
 import { cpSync, existsSync } from 'node:fs';
 
 const root = import.meta.dirname;
-const PAGES = ['index', 'play', 'coach', 'key', 'join', 'team', 'placement'];
-// The preview trial (trial hub and owner page) is built only when the build points at the
-// lacrossetube-dev project or a local Supabase stack. Production builds never contain it.
+const PAGES = ['index', 'play', 'coach', 'key', 'join', 'team', 'placement', 'test'];
+// The owner page (/owner) is built whenever the site has a Supabase project. The trial page
+// (/trial) is built only when the build points at the lacrossetube-dev project or a local stack.
 const DEV_PROJECT = 'xeildwwpwfgficrqziph';
-const TRIAL_PAGES = ['trial', 'owner'];
+const TRIAL_PAGES = ['trial'];
 const isTrialTarget = url => url === `https://${DEV_PROJECT}.supabase.co` || /^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url);
 const RUNTIME_DIRS = ['data', 'js', 'samples', 'blog'];
 
@@ -38,7 +38,7 @@ const copyRuntime = () => ({
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, root, '');
   const trial = isTrialTarget(env.SUPABASE_URL || '');
-  const pages = trial ? [...PAGES, ...TRIAL_PAGES] : PAGES;
+  const pages = [...PAGES, ...(env.SUPABASE_URL ? ['owner'] : []), ...(trial ? TRIAL_PAGES : [])];
   return {
     publicDir: false,
     define: {

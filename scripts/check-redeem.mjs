@@ -46,8 +46,8 @@ console.log('ok  the key\'s own address is stored; a wrong address is refused');
 
 await player.rpc('placement_submit', { p_results: ['help', 'talk', 'slide', 'angle', 'hustle'].map(concept => ({ concept, idea_id: `fake-${concept}`, grade: 'perfect' })) });
 const before = (await player.rpc('team_home')).data.wallet;
-assert.equal(before.address, pat.address); assert.equal(before.points, 750);
-console.log(`ok  placement earned ${before.points} points in Supabase; wallet ${before.address.slice(0, 10)}…`);
+assert.equal(before.address, pat.address); assert.equal(before.points, 1000);
+console.log(`ok  placement (Warrior tier 1) earned ${before.points} points in Supabase; wallet ${before.address.slice(0, 10)}…`);
 
 const st = await fn('redeem', { action: 'status' }, token);
 assert.equal(st.body.configured, true, JSON.stringify(st.body));
@@ -55,9 +55,9 @@ const res = await fn('redeem', { action: 'redeem' }, token);
 assert.equal(res.status, 502, JSON.stringify(res.body));
 assert.match(res.body.error, /points are back/);
 const after = (await player.rpc('team_home')).data.wallet;
-assert.equal(after.points, 750);
-assert.equal(after.receipts[0].status, 'failed'); assert.equal(after.receipts[0].points, 700); assert.equal(after.receipts[0].to_address, pat.address);
-console.log(`ok  redeem reserved 700 points, the empty treasury could not pay on chain ${st.body.chain.id}, the points came back and a failed receipt was written`);
+assert.equal(after.points, 1000);
+assert.equal(after.receipts[0].status, 'failed'); assert.equal(after.receipts[0].points, 1000); assert.equal(after.receipts[0].to_address, pat.address);
+console.log(`ok  redeem reserved 1,000 points (1 DOGE), the empty treasury could not pay on chain ${st.body.chain.id}, the points came back and a failed receipt was written`);
 assert.equal((await fn('redeem', { action: 'redeem' })).status, 401);
 console.log('ok  redeem needs a signed-in person');
 console.log('\nRedeem checks passed against', url);

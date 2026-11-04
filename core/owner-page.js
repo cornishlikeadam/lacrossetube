@@ -56,17 +56,18 @@ async function start() {
 
 function paintLoad() {
   root.innerHTML = `<p class="kicker">OWNER</p><h1>Approve teams</h1>
-    <p>Load the owner key file that <code>node scripts/owner.mjs init</code> made. It is at <code>~/.lacrossetube/owner-key.json</code>. In the file picker on a Mac, press Command-Shift-Period to show that hidden folder.</p>
-    <p class="hint">The file is opened here and never uploaded. After this, this browser keeps the key locked to itself, so approving is one click.</p>
-    <label class="field" for="ow-file">Owner key file<input id="ow-file" type="file" accept=".json,application/json"></label>
+    <p>Once per browser, give this page the owner key that <code>node scripts/owner.mjs init</code> made, and its passphrase. It is the file <code>~/.lacrossetube/owner-key.json</code>, still locked with your passphrase.</p>
+    <p class="hint">The easy way: in Terminal run <code>pbcopy &lt; ~/.lacrossetube/owner-key.json</code>, then paste below. The key is opened here and never uploaded. After this, this browser keeps it locked to itself, so approving is one click.</p>
+    <label class="field" for="ow-paste">Paste the owner key file<textarea id="ow-paste" rows="4" spellcheck="false" autocomplete="off" placeholder='{ "v": 1, "pubkey": "…" }'></textarea></label>
+    <label class="field" for="ow-file">Or choose the file<input id="ow-file" type="file" accept=".json,application/json"></label>
     <label class="field" for="ow-pass">Owner passphrase<input id="ow-pass" type="password" autocomplete="current-password"></label>
     <div class="row"><button class="btn" type="button" id="ow-go">UNLOCK</button></div>
     <p class="msg" id="ow-msg" role="status" hidden></p>`;
   $('ow-go').addEventListener('click', e => busy(e.currentTarget, $('ow-msg'), async () => {
-    const f = $('ow-file').files[0];
-    if (!f) throw new Error('Choose the owner key file first.');
+    const f = $('ow-file').files[0], pasted = $('ow-paste').value.trim();
+    if (!f && !pasted) throw new Error('Paste the owner key file, or choose it.');
     let file;
-    try { file = JSON.parse(await f.text()); } catch { throw new Error('That file is not a LacrosseTube key file.'); }
+    try { file = JSON.parse(pasted || await f.text()); } catch { throw new Error('That is not a LacrosseTube key file. Copy the whole file and paste again.'); }
     say($('ow-msg'), 'Opening the key file. This takes a few seconds…');
     const sk = await openKeyFile(file, $('ow-pass').value);
     try {

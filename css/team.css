@@ -95,3 +95,4 @@ details.offline-roster summary h2{display:inline-flex}
 .warn-line{font-size:14px;border-left:4px solid var(--start);padding-left:10px}
 .receipts li{font-size:14px;color:var(--ink-soft)}
 .linkish{background:none;border:0;color:var(--cont);text-decoration:underline;cursor:pointer;padding:0;font-size:inherit}
+.field textarea{font:13px ui-monospace,Menlo,monospace;color:var(--ink);background:#05070f;border:2px solid rgba(255,255,255,.2);padding:10px 12px;width:100%;resize:vertical}

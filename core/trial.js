@@ -12,8 +12,9 @@ export const PEOPLE = [
 const KEY = 'lt-trial-person';
 const read = () => { try { return globalThis.localStorage?.getItem(KEY) || ''; } catch { return ''; } };
 
-// The slot this page uses. Fixed for the life of the page; switching reloads into another slot.
-export const slot = TRIAL ? read() : '';
+// The slot this page uses: the Coach until someone picks another. Fixed for the life of the page;
+// switching reloads into another slot.
+export const slot = TRIAL ? (read() || 'coach') : '';
 export const slotLabel = id => PEOPLE.find(p => p.id === id)?.label || 'You';
 export function useSlot(id) { if (TRIAL) localStorage.setItem(KEY, id); }
 export const suffix = id => (id ? `:${id}` : '');

@@ -1,8 +1,9 @@
 // The CSP in vercel.json must keep blocking third-party scripts. Phase 0 may add one Supabase
-// project to connect-src (https + wss for the same host) and nothing else.
+// project to connect-src (https + wss for the same host); Phase 3 adds the DogeOS testnet RPC.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { CHAIN } from '../supabase/functions/_shared/chain.js';
 
 const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
 const csp = config.headers.flatMap(h => h.headers).find(h => h.key === 'Content-Security-Policy').value;
@@ -16,8 +17,13 @@ test('scripts load only from this site', () => {
   assert.ok(!/script-src[^;]*'unsafe-inline'/.test(csp));
 });
 
-test('connect-src allows this site, fonts, and at most one Supabase project', () => {
-  const extra = dir['connect-src'].filter(s => !["'self'", 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'].includes(s));
+test('connect-src allows this site, fonts, at most one Supabase project, and the DogeOS testnet RPC', () => {
+  // Phase 3: the wallet reads balances from the testnet RPC in chain.js. Nothing else on DogeOS.
+  const rpc = new URL(CHAIN.rpcUrl).origin;
+  assert.equal(rpc, 'https://rpc.testnet.dogeos.com');
+  assert.ok(dir['connect-src'].includes(rpc));
+  assert.ok(!dir['connect-src'].some(s => /dogeos/.test(s) && s !== rpc), 'only the testnet RPC from chain.js');
+  const extra = dir['connect-src'].filter(s => !["'self'", 'https://fonts.googleapis.com', 'https://fonts.gstatic.com', rpc].includes(s));
   assert.ok(extra.length === 0 || extra.length === 2, `unexpected connect-src entries: ${extra}`);
   if (extra.length) {
     const [https, wss] = extra;

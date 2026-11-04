@@ -57,3 +57,14 @@ test('the wallet, forum and payout pages exist and the forum is built', () => {
   assert.match(read('core/coach-team.js'), /mountWallet/);
   assert.match(read('core/coach-team.js'), /ap-state/);
 });
+
+test('no owner or treasury key code reaches the browser bundle', () => {
+  const browser = ['core', 'field', 'js'].flatMap(d => readdirSync(new URL(`../${d}`, import.meta.url)).filter(f => f.endsWith('.js')).map(f => `${d}/${f}`));
+  for (const f of browser) {
+    const text = read(f);
+    // Names may appear in help text; what matters is that no browser module loads server key code.
+    assert.ok(!/from\s+['"][^'"]*(wallet-core|team-key|owner-lib|scripts\/)[^'"]*['"]|import\(\s*['"][^'"]*(wallet-core|team-key|owner-lib)/.test(text), `${f} must not import server key code`);
+    assert.ok(!/Deno\.env|process\.env\.(TREASURY|OWNER)/.test(text), `${f} must not read server secrets`);
+  }
+  assert.match(read('supabase/functions/redeem/index.ts'), /Deno\.env\.get\('TREASURY_PRIVATE_KEY'\)/);
+});

@@ -88,6 +88,21 @@ The player sees each payout on their team page with what it needs, and a CONFIRM
 
 **Checks.** `tests/phase2-db.test.mjs` runs as part of `npm test` against a throwaway local Postgres with every migration applied (`tests/db/pg.mjs`; it starts one with `initdb` and stand-ins for the Supabase auth and storage schemas, and skips when no Postgres server binaries are installed). `tests/phase2-ui.test.mjs` checks the film counter and that tips exist only on forum posts. `node scripts/check-phase2.mjs` runs the same flows through the real API against the local Supabase stack, like the Phase 1, Warrior and redeem checks.
 
+## Web3 Phase 3: the testnet chain on
+
+Still DogeOS Chikyū Testnet only (`chain.js`), still the dev project, no production deploy. The redeem Edge Function now does every chain transfer; its rules are in `supabase/functions/_shared/wallet-core.js` (tested in Node against the migrated database with a fake chain, `tests/wallet-chain.test.mjs`) and `redeem/index.ts` wires in Supabase and viem. Until both `DOGEOS_CLIENT_ID` and `TREASURY_PRIVATE_KEY` are set, it answers "not configured", redeem keeps that label, and sends, gifts and payouts stay site balance as in Phase 2.
+
+Once both are set:
+- **Redeem** moves points to testnet DOGE at the person's current address and writes the receipt in `point_redemptions`. A failed transfer gives the points back.
+- **Sending to a teammate** holds the points, sends the same value in testnet DOGE from the treasury to the teammate's address, and stores the tx hash on the `point_transfers` receipt, linked to `https://dogeos-testnet.l2scan.co/tx/<hash>`. A failed transfer gives the points back.
+- **Giving to a team pool** sends testnet DOGE to the **team address**. Each approved team has its own address, separate from the coach's wallet. Its key is never stored: the function derives it from the treasury key and the team id (`_shared/team-key.js`) and records the address on the team. Anyone can also send DOGE to it from any wallet.
+- **Session payouts A–D** stay site balance (from the points pool) until the team address holds enough testnet DOGE for the payout plus gas. Then a confirmed payout is a transfer from the team address to the player's address, with the tx hash on the receipt. The condition must be true and the player must confirm, as before; a failed transfer takes nothing and the player can confirm again.
+- Tips and paid services stay site balance.
+- The wallet shows on-chain balances read from the public RPC; the CSP's `connect-src` adds `https://rpc.testnet.dogeos.com` only (no wildcard; the browser loads no DogeOS SDK).
+- If the treasury holds no DOGE, transfers fail cleanly with the points returned, and the wallet points to the faucet.
+
+**Switching it on (operator machine, once).** `node scripts/dev-chain-on.mjs` signs the Supabase CLI in if needed, links lacrossetube-dev, pushes the migrations, deploys `key-login`, `owner-verify` and `redeem`, makes the treasury key if there is none (stored only as the secret; never printed), asks for the DogeOS Sandbox client ID if `DOGEOS_CLIENT_ID` is missing, and prints the treasury address, its balance and the faucet link. The faucet needs a person to claim (once a day). `node scripts/treasury.mjs init` now refuses to replace an existing treasury key without `--replace`, because team addresses are derived from it.
+
 ## Film notes and team sharing
 
 Open a film to see the clock and **Mark this moment**. Add a short note, optional skill tag, and optional by name. The clock accepts time messages only from the current YouTube privacy-enhanced embed. It never estimates elapsed time while buffering. If the player cannot report time, use **Set timestamp manually**.

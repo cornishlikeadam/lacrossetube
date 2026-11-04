@@ -68,9 +68,10 @@ export async function logInWithKey(unlock = {}) {
 // Downloads this device's key as a passphrase-encrypted file.
 export const keyFile = (unlock, passphrase) => exportKeyFile(unlock, { pepper }, passphrase);
 
-// Points to testnet DOGE (the redeem Edge Function).
-async function redeemCall(action) {
-  const { data, error } = await supabase.functions.invoke('redeem', { body: { action } });
+// Chain transfers (the redeem Edge Function): redeem points to testnet DOGE, and once the chain is
+// switched on, sends to teammates, gifts to team pools and session payouts as DOGE transfers.
+async function redeemCall(action, extra = {}) {
+  const { data, error } = await supabase.functions.invoke('redeem', { body: { action, ...extra } });
   if (!error) return data;
   const detail = await error.context?.json?.().catch(() => null);
   if (detail?.configured === false) return detail;
@@ -78,6 +79,10 @@ async function redeemCall(action) {
 }
 export const redeemStatus = () => redeemCall('status');
 export const redeemPoints = () => redeemCall('redeem');
+export const chainSend = (to, points, note) => redeemCall('send', { to, points, note });
+export const chainDonate = (org, points, note) => redeemCall('donate', { org, points, note });
+export const chainClaim = payout => redeemCall('claim', { payout });
+export const teamWallet = org => redeemCall('team', { org });
 
 export async function currentUser() {
   if (!supabase) return null;

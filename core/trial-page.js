@@ -89,7 +89,7 @@ async function start() {
           <button class="btn alt" type="button" data-go="coach:/coach">COACH DESK</button>
           <button class="ghost" type="button" data-go="p1:/team"${joined.p1 ? '' : ' disabled'}>Player 1 team page</button></div></li>
       <li><h2>Redeem</h2>
-        <p>On a player's wallet, redeem turns points into testnet DOGE at their address, with a receipt and an explorer link. Until the chain is switched on for this project it says "not configured".</p>
+        <p>On a player's wallet, redeem turns points into testnet DOGE at their address, with a receipt and an explorer link. Until the chain is switched on for this project (both DOGEOS_CLIENT_ID and TREASURY_PRIVATE_KEY set) it says "not configured". With it on, sends and gifts are testnet DOGE transfers too.</p>
         <div class="row"><button class="ghost" type="button" data-go="p1:/team#wallet"${joined.p1 ? '' : ' disabled'}>Player 1 wallet</button></div></li>
     </ol>
     <p class="msg" id="tr-msg" role="status" hidden></p>

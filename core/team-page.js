@@ -3,7 +3,7 @@
 // (site balance, DogeOS address, sending, team pools, redeem) and profile edits.
 import { supabase } from './supabase.js';
 import { status } from './keyring.js';
-import { rpc, logOut, redeemStatus } from './auth.js';
+import { rpc, logOut, redeemStatus, chainClaim } from './auth.js';
 import { liveStreak } from '../field/progress.js';
 import { loadProfile } from '../field/db.js';
 import { POINTS } from '../supabase/functions/_shared/chain.js';
@@ -70,7 +70,9 @@ async function start() {
   $('tm-out').addEventListener('click', async () => { await logOut(); signInChoice(root); });
 
   if (isPlayer) {
-    if (payouts) playerPayouts($('tm-payouts'), payouts, { onChange: start });
+    // With the chain on, a confirmed payout leaves from the team address once it holds DOGE.
+    const claim = redeem.configured ? async id => { const out = await chainClaim(id); if (!out.transfer) throw new Error(out.error || 'Could not confirm.'); return out.transfer; } : undefined;
+    if (payouts) playerPayouts($('tm-payouts'), payouts, { onChange: start, ...(claim ? { claim } : {}) });
     else $('tm-payouts').innerHTML = '<p class="empty">Session payouts open here once this site\'s database has the Phase 2 update.</p>';
   }
   await mountWallet($('tm-wallet'), { home, key, redeem, donateTo, onChange: start });

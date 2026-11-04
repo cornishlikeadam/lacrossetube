@@ -5,10 +5,11 @@
 //   C  watch    the player watched the assigned film for the minutes the coach set
 //   D  present  the coach marks the player present
 // Points leave the team pool only when the condition is true and the player confirms.
-import { rpc } from './auth.js';
+import { rpc, redeemStatus, teamWallet } from './auth.js';
+import { balanceOf } from './chain-read.js';
 import { readHash } from '../field/share.js';
 import { loadCoach } from '../field/db.js';
-import { POINTS, txUrl } from '../supabase/functions/_shared/chain.js';
+import { POINTS, txUrl, addressUrl, formatDoge, CHAIN } from '../supabase/functions/_shared/chain.js';
 import { $, esc, say, busy } from './ui.js';
 
 const P = POINTS.payout;
@@ -68,13 +69,18 @@ const filmIdFrom = (text, list) => {
 };
 
 export async function coachPayouts(el, team, { onChange } = {}) {
-  const [view, coach, list] = await Promise.all([rpc('payouts_for_coach', { p_org: team.org_id }), loadCoach().catch(() => ({ sessions: {} })), films()]);
+  const [view, coach, list, chain] = await Promise.all([rpc('payouts_for_coach', { p_org: team.org_id }), loadCoach().catch(() => ({ sessions: {} })), films(),
+    redeemStatus().catch(() => ({ configured: false }))]);
+  // Chain on: the team address is made (on the server) and recorded the first time it is needed.
+  if (chain.configured && !view.address) view.address = (await teamWallet(team.org_id).catch(() => null))?.address || null;
   const made = Object.values(coach.sessions || {}).sort((a, b) => (b.made || 0) - (a.made || 0)).slice(0, 8);
   const donate = `${location.origin}/team?donate=${team.org_id}`;
   el.innerHTML = `<h2><i>$</i> TEAM POOL &amp; SESSION PAYOUTS</h2>
     <div class="pool"><b>${n(view.pool)}</b><span>points in the ${esc(team.name)} pool</span>
       <small>Anyone signed in can give to it from their wallet. Share this link: <code>${esc(donate)}</code> <button class="ghost" type="button" id="pl-copy">Copy</button></small>
-      ${view.address ? `<small>Team address: <code>${esc(view.address)}</code> (separate from your own wallet)</small>` : ''}</div>
+      ${view.address ? `<small>Team address: <code>${esc(view.address)}</code> <a href="${addressUrl(view.address)}" target="_blank" rel="noopener noreferrer">Explorer</a> · separate from your own wallet</small>
+        <small id="pl-onchain">${chain.configured ? 'On chain: checking…' : ''}</small>` : ''}
+      ${chain.configured ? `<small>Payouts leave from the team address once it holds enough testnet DOGE (gifts and anyone's ${CHAIN.currency.symbol} sent to it). Until then they come from the points pool.</small>` : ''}</div>
     ${view.donations.length ? `<ul class="activity">${view.donations.map(d => `<li class="in"><span>${new Date(d.created_at).toLocaleDateString()} · ${esc(d.from || 'A member')}${d.note ? ` · “${esc(d.note)}”` : ''}${d.settle === 'chain' ? ' · on chain' : ''}</span><b>+${n(d.points)}</b>${d.tx_hash ? `<small><a href="${txUrl(d.tx_hash)}" target="_blank" rel="noopener noreferrer">receipt on explorer</a></small>` : ''}</li>`).join('')}</ul>` : ''}
 
     <h3 class="sub">New session payout</h3>
@@ -107,6 +113,7 @@ export async function coachPayouts(el, team, { onChange } = {}) {
     }).join('')}</ul>` : ''}
     <p class="msg" id="pl-msg" role="status" hidden></p>`;
 
+  if (chain.configured && view.address) balanceOf(view.address).then(b => { const x = $('pl-onchain'); if (x) x.textContent = b == null ? 'On chain: could not reach the DogeOS RPC.' : `On chain: ${formatDoge(b)}`; });
   const cond = () => el.querySelector('input[name="py-cond"]:checked').value;
   el.querySelectorAll('input[name="py-cond"]').forEach(r => r.addEventListener('change', () => { $('py-watch').hidden = cond() !== 'watch'; }));
   $('py-made')?.addEventListener('change', e => { $('py-link').value = e.target.value; });

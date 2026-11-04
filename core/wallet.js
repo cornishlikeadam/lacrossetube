@@ -3,7 +3,10 @@
 // made from this device's key, and today's automatic earnings against their caps. From here a
 // member sends points to a teammate, gives to a team pool, and redeems points for testnet DOGE.
 // The profile edits stay on each page, under this section.
-import { rpc, keyFile, redeemPoints } from './auth.js';
+// Once the chain is switched on (the redeem function reports configured), sending to a teammate and
+// giving to a team pool are testnet DOGE transfers with a tx hash, and the on-chain balances show.
+import { rpc, keyFile, redeemPoints, chainSend, chainDonate } from './auth.js';
+import { balanceOf } from './chain-read.js';
 import { supabase } from './supabase.js';
 import { isPin } from './keyring.js';
 import { download } from './keyfile.js';
@@ -50,7 +53,7 @@ export async function mountWallet(el, ctx) {
     if (data) donateTeam = { org_id: data.id, name: data.name, state: data.state, outside: true };
   }
   const poolTeams = [...(donateTeam ? [donateTeam] : []), ...w.teams];
-  const t = w.today;
+  const t = w.today, chain = Boolean(redeem.configured);
 
   el.innerHTML = `<h2 class="sub" id="wallet">Wallet</h2>
     <div class="wallet">
@@ -65,8 +68,11 @@ export async function mountWallet(el, ctx) {
       <p>Your DogeOS address (${esc(CHAIN.name)}). Your login key is also this wallet:</p>
       <p class="addr"><code id="wl-addr">${esc(address || 'Sign in again to show it')}</code>
         ${address ? `<a class="ghost" href="${addressUrl(address)}" target="_blank" rel="noopener noreferrer">Explorer</a>` : ''}</p>
+      ${chain && address ? '<p class="hint" id="wl-onchain">On chain: checking…</p>' : ''}
+      ${chain ? '<p class="hint" id="wl-treasury" hidden></p>' : ''}
 
       ${w.teammates.length ? `<details class="edit" id="wl-send-box"><summary>Send points to a teammate</summary>
+        ${chain ? `<p class="hint">Sent as testnet DOGE (${POINTS.perDoge.toLocaleString()} points = 1 ${CHAIN.currency.symbol}) to your teammate's address, with a receipt on the explorer.</p>` : ''}
         <label class="field" for="wl-to">Teammate<select id="wl-to">${w.teammates.map(m => `<option value="${esc(m.id)}">${esc(m.display_name)} · ${esc(m.team)}</option>`).join('')}</select></label>
         <label class="field" for="wl-amt">Points<input id="wl-amt" type="number" inputmode="numeric" min="1" max="${w.points}" step="1" value="${Math.min(100, w.points) || ''}"></label>
         <label class="field" for="wl-note">Note (optional)<input id="wl-note" maxlength="140" autocomplete="off"></label>
@@ -74,7 +80,7 @@ export async function mountWallet(el, ctx) {
         <p class="msg" id="wl-send-msg" role="status" hidden></p></details>` : ''}
 
       ${poolTeams.length ? `<details class="edit" id="wl-give-box"${donateTeam ? ' open' : ''}><summary>Give to a team pool</summary>
-        <p class="hint">A team pool pays the coach's session payouts. Anyone can give to any approved team.</p>
+        <p class="hint">A team pool pays the coach's session payouts. Anyone can give to any approved team.${chain ? ' Your gift goes as testnet DOGE to the team address, which is separate from the coach\'s own wallet.' : ''}</p>
         <label class="field" for="wl-team">Team<select id="wl-team">${poolTeams.map(x => `<option value="${esc(x.org_id)}">${esc(x.name)}${x.state ? ` · ${esc(x.state)}` : ''}${x.outside ? '' : ` · pool ${n(x.pool)} points`}</option>`).join('')}</select></label>
         <label class="field" for="wl-gamt">Points<input id="wl-gamt" type="number" inputmode="numeric" min="1" max="${w.points}" step="1" value="${Math.min(500, w.points) || ''}"></label>
         <div class="row"><button class="btn alt" type="button" id="wl-give"${w.points ? '' : ' disabled'}>GIVE TO POOL</button></div>
@@ -103,15 +109,21 @@ export async function mountWallet(el, ctx) {
   const amount = id => { const v = Number($(id).value); if (!Number.isInteger(v) || v < 1) throw new Error('Give a whole number of points.'); if (v > w.points) throw new Error(`You have ${n(w.points)} points.`); return v; };
   $('wl-send')?.addEventListener('click', e => busy(e.currentTarget, $('wl-send-msg'), async () => {
     const points = amount('wl-amt'), to = w.teammates.find(m => m.id === $('wl-to').value);
-    if (!confirm(`Send ${n(points)} points to ${to.display_name}?`)) return;
-    await rpc('points_send', { p_to: to.id, p_points: points, p_note: $('wl-note').value.trim() || null });
+    if (!confirm(chain ? `Send ${n(points)} points to ${to.display_name} as ${doge(points)} on ${CHAIN.name}?` : `Send ${n(points)} points to ${to.display_name}?`)) return;
+    if (chain) {
+      const out = await chainSend(to.id, points, $('wl-note').value.trim() || null);
+      if (!out.transfer) throw new Error(out.error || 'The transfer did not go through.');
+    } else await rpc('points_send', { p_to: to.id, p_points: points, p_note: $('wl-note').value.trim() || null });
     say($('wl-send-msg'), `Sent ${n(points)} points to ${to.display_name}.`, 'ok');
     ctx.onChange?.();
   }));
   $('wl-give')?.addEventListener('click', e => busy(e.currentTarget, $('wl-give-msg'), async () => {
     const points = amount('wl-gamt'), team = poolTeams.find(x => x.org_id === $('wl-team').value);
     if (!confirm(`Give ${n(points)} points to the ${team.name} team pool? Its coach pays session payouts from it.`)) return;
-    await rpc('team_donate', { p_org: team.org_id, p_points: points, p_note: null });
+    if (chain) {
+      const out = await chainDonate(team.org_id, points, null);
+      if (!out.transfer) throw new Error(out.error || 'The transfer did not go through.');
+    } else await rpc('team_donate', { p_org: team.org_id, p_points: points, p_note: null });
     say($('wl-give-msg'), `Thank you. ${n(points)} points went to the ${team.name} pool.`, 'ok');
     ctx.onChange?.();
   }));
@@ -132,6 +144,14 @@ export async function mountWallet(el, ctx) {
     download(`lacrossetube-key-${file.address.slice(2, 10).toLowerCase()}.json`, file);
     say($('kf-msg'), 'Downloaded. Keep the file and its passphrase somewhere safe.', 'ok');
   }));
+  if (chain) {
+    // What the addresses hold on chain, read from the public RPC. A failed read just says so.
+    if (address) balanceOf(address).then(b => { const el = $('wl-onchain'); if (el) el.textContent = b == null ? 'On chain: could not reach the DogeOS RPC.' : `On chain: ${formatDoge(b)} at this address.`; });
+    if (redeem.treasury) balanceOf(redeem.treasury).then(b => {
+      const el = $('wl-treasury');
+      if (el && b === 0n) { el.hidden = false; el.innerHTML = `The treasury has no testnet DOGE yet, so redeems and sends come back with your points. It is funded from the <a href="${CHAIN.faucet}" target="_blank" rel="noopener noreferrer">faucet</a>.`; }
+    });
+  }
   return w;
 }
 

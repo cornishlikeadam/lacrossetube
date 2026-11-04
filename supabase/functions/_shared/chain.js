@@ -11,7 +11,20 @@ export const CHAIN = {
 };
 
 // Points earned in LacrosseTube (stored in Supabase) and what they redeem for.
-export const POINTS = { perDoge: 1000, minRedeem: 100 };
+// earn: the only automatic daily earnings. 500 points per minute the film clock is advancing (at
+// most 30 minutes) and 1,000 points for the first finish of a What Coach Said game (at most 7),
+// under a 25,000-point daily ceiling that is room, not a third payout. Warrior Tests, tips,
+// services, donations and session payouts never count toward it.
+// payout: the fixed amounts of a coach's session payouts (A open, B finish, C watch per minute,
+// D present). The coach picks the condition, never the amount.
+// The database enforces the same numbers in public.earn_rules(); tests/phase2-db.test.mjs checks
+// that the two agree.
+export const POINTS = {
+  perDoge: 1000,
+  minRedeem: 100,
+  earn: { perMinute: 500, maxMinutes: 30, perGame: 1000, maxGames: 7, dailyCap: 25000, dayZone: 'America/New_York' },
+  payout: { open: 100, finish: 500, watchPerMinute: 100, maxWatchMinutes: 30, present: 500 },
+};
 
 export const txUrl = hash => `${CHAIN.explorer}/tx/${hash}`;
 export const addressUrl = address => `${CHAIN.explorer}/address/${address}`;

@@ -1261,3 +1261,6 @@ summary { cursor: pointer; padding: 10px 0; font-size: .84rem; font-weight: 700;
   .brand-icon { display: none; }
   .brand-title { font-size: .88rem; }
 }
+
+/* Signed-in members: today's paid film minutes, under the film (core/film-earn.js). */
+.lt-earn { margin: 8px 16px 0; font-size: 0.82rem; color: #34d399; font-weight: 600; }

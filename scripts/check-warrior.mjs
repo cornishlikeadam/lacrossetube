@@ -30,7 +30,7 @@ async function signed(d, extra) {
 const client = async session => { const c = createClient(url, key, { auth: { persistSession: false } }); await c.auth.setSession(session); return c; };
 const call = async (c, name, args) => { const { data, error } = await c.rpc(name, args); if (error) throw new Error(`${name}: ${error.message}`); return data; };
 
-const applied = await fn('key-login', { step: 'apply', ...(await signed(device(), { coach: { first_name: 'Tier', last_initial: 'T' }, team: { name: `Warrior Test ${Date.now().toString(36)}`, city: 'Lab' } })) });
+const applied = await fn('key-login', { step: 'apply', ...(await signed(device(), { coach: { first_name: 'Tier', last_initial: 'T' }, team: { name: `Warrior Test ${Date.now().toString(36)}`, city: 'Lab', state: 'New York' } })) });
 const coach = await client(applied.body.session), org = applied.body.orgId;
 assert.equal((await fn('owner-verify', signOwnerRequest(ownerSk, 'verify_org', { org_id: org }))).status, 200);
 await call(coach, 'roster_add', { p_org: org, p_first_name: 'Ari', p_last_initial: 'W', p_number: '3', p_position: 'attack', p_age_band: '18_plus' });

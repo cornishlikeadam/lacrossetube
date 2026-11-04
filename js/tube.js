@@ -813,6 +813,8 @@ function stopClock() {
   if (clockTimer) clearInterval(clockTimer);
   clockTimer = 0;
   clockSynced = false;
+  // core/film-earn.js stops counting film time here.
+  document.dispatchEvent(new CustomEvent('lt-film-stop'));
 }
 
 function playerMessage(iframe, payload) {
@@ -859,6 +861,8 @@ window.addEventListener('message', (event) => {
   clockT = data.time;
   clockSynced = true;
   paintClock();
+  // The film's time as the player reported it; core/film-earn.js counts the seconds it advances.
+  document.dispatchEvent(new CustomEvent('lt-film-clock', { detail: { id: currentModalItemId, t: clockT } }));
 });
 
 function marksNow(itemId) {

@@ -7,7 +7,7 @@ import { resolve } from 'node:path';
 import { cpSync, existsSync } from 'node:fs';
 
 const root = import.meta.dirname;
-const PAGES = ['index', 'play', 'coach', 'key', 'join', 'team', 'placement', 'test'];
+const PAGES = ['index', 'play', 'coach', 'key', 'join', 'team', 'placement', 'test', 'forum'];
 // The owner page (/owner) is built whenever the site has a Supabase project. The trial page
 // (/trial) is built only when the build points at the lacrossetube-dev project or a local stack.
 const DEV_PROJECT = 'xeildwwpwfgficrqziph';

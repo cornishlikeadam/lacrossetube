@@ -93,7 +93,7 @@ async function paintPending(pubkey) {
   root.innerHTML = `<p class="kicker">OWNER</p><h1>Approve teams</h1>
     <p class="hint">Signed with owner key ${esc(pubkey.slice(0, 8))}…${esc(pubkey.slice(-8))}.</p>
     ${applications.length ? `<ul class="apps">${applications.map(a => `<li data-org="${esc(a.org_id)}">
-        <div><b>${esc(a.team)}</b>${a.city ? ` · ${esc(a.city)}` : ''}<br><small>Coach ${esc(a.coach || '')}${a.email ? ` · ${esc(a.email)}` : ''} · applied ${esc(a.applied.slice(0, 10))}</small></div>
+        <div><b>${esc(a.team)}</b>${[a.city, a.state].filter(Boolean).length ? ` · ${[a.city, a.state].filter(Boolean).map(esc).join(', ')}` : ''}<br><small>Coach ${esc(a.coach || '')}${a.email ? ` · ${esc(a.email)}` : ''} · applied ${esc(a.applied.slice(0, 10))}${a.website ? ` · <a href="${esc(a.website)}" target="_blank" rel="noopener noreferrer">${esc(a.website)}</a>` : ''}</small></div>
         <button class="btn" type="button" data-approve>APPROVE</button></li>`).join('')}</ul>`
       : '<p class="empty">No teams waiting. When a coach applies on the coach desk, it shows up here.</p>'}
     <p class="msg" id="ow-msg" role="status" hidden></p>

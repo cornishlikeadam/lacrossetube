@@ -11,6 +11,7 @@ import { db, loadProfile, saveProfile } from './db.js';
 import { loadLibrary, ideasFor, sportIdeasWithPosition, ideaById, itemFromIdea, pickLibraryItems, libraryStats } from './ideas.js';
 import { XP, tierOf, TIER_XP, UNLOCKS, unlockedIds, nextUnlock, liveStreak, weekProgress, WEEKLY_GOAL, applyResult, RARITY, rarity, localDay } from './progress.js';
 import { pack, readHash, teamGroups, shareOrCopy } from './share.js';
+import { gameDone, sessionEvent } from '../core/earn.js';
 
 const $ = id => document.getElementById(id);
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -164,6 +165,8 @@ async function readTeamLink() {
     const h = await readHash(location.hash);
     if (h?.kind !== 't') return;
     state.team = h.data;
+    // Signed in: the coach's session counts as opened (a session payout can ask for that).
+    sessionEvent(h.data.id, 'open').catch(() => {});
     if (state.sport !== h.data.sport) { state.sport = h.data.sport; state.position = state.profile.sport === h.data.sport ? state.profile.position : null; }
     syncInput(); paintChips(); paintTeam();
     // A player who opens the coach's link lands on the team card, not the pitch for new players.
@@ -416,6 +419,7 @@ async function award(item, r, resEl) {
   const u = state.update, ev = applyResult(state.profile, u, item, r.g);
   await db.putUpdate(u); await saveProfile(state.profile);
   paintHUD(); paintOutro();
+  earnFor(u, item, r.g);
   const g = u.results[keyOf(item)];
   resEl.hidden = false; resEl.className = 'result' + (g === 'miss' ? ' miss' : ''); resEl.textContent = `BEST: ${g.toUpperCase()} · tap the field to watch again`;
   for (const x of ev.unlocked) toast(`TIER ${x.tier} · ${x.name.toUpperCase()} UNLOCKED`);
@@ -423,6 +427,17 @@ async function award(item, r, resEl) {
   if (ev.badge) toast(`${CONCEPTS[ev.badge.concept].name.toUpperCase()} → ${RARITY[ev.badge.to]}`);
   if (ev.streakUp && ev.streak > 1) toast(`${ev.streak}-DAY STREAK`);
   if (ev.clean) toast('CLEAN SHEET · +50 XP');
+}
+
+// Signed in on this device: the first finish of each game pays points (up to seven games a day),
+// and finishing every frame of a coach's team link marks that session finished.
+async function earnFor(u, item, grade) {
+  try {
+    const r = await gameDone(keyOf(item), item.concept, grade);
+    if (r?.reason === 'paid' && r.points_added) toast(`+${r.points_added.toLocaleString()} POINTS · GAME ${r.games} OF ${r.max_games} TODAY`);
+    else if (r?.reason === 'cap') toast(`${r.max_games} PAID GAMES TODAY · THIS ONE PAYS TOMORROW`);
+    if (u.team?.id && u.items.every(i => u.results[keyOf(i)])) await sessionEvent(u.team.id, 'finish');
+  } catch { /* offline or signed out: the game still counts on this device */ }
 }
 
 /* ---------- send results to the coach ---------- */

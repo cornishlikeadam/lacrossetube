@@ -3,7 +3,7 @@
 //   POST { step: 'verify', pubkey, challenge, sig }           -> { session, personId, pubkey }
 //   POST { step: 'enroll', pubkey, challenge, sig, verifier } -> { pepper }   (PIN keys, once)
 //   POST { step: 'pin', pubkey, verifier }                    -> { pepper }   (unlock a PIN key)
-//   POST { step: 'apply', pubkey, challenge, sig, verifier?, coach, team } -> { pepper?, session, personId, orgId }
+//   POST { step: 'apply', pubkey, challenge, sig, verifier?, coach, team: { name, city, state, website? } } -> { pepper?, session, personId, orgId }
 //   POST { step: 'invite-info', code }                        -> { invite }
 //   POST { step: 'invite-accept', code, pubkey, challenge, sig, verifier?, consent? } -> { pepper?, session, personId }
 // `apply` is how a coach starts: it registers their first key and an unverified team, which the
@@ -29,6 +29,7 @@ import { keccak_256 } from 'npm:@noble/hashes@2.4.0/sha3.js';
 import { bytesToHex, hexToBytes } from 'npm:@noble/hashes@2.4.0/utils.js';
 import { keyLoginCore, KeyLoginError } from '../_shared/key-login-core.js';
 import { addressesForXOnly, isAddress } from '../_shared/evm.js';
+import { US_STATES, validWebsite } from '../_shared/states.js';
 
 const URL = Deno.env.get('SUPABASE_URL');
 const firstSecret = (json?: string) => { try { return Object.values(JSON.parse(json || '{}'))[0] as string | undefined; } catch { return undefined; } };
@@ -155,7 +156,7 @@ async function sessionFor(db: Db, userId: string, personId: string) {
 
 type Body = {
   step?: string; pubkey?: string; challenge?: string; sig?: string; verifier?: string; code?: string; consent?: boolean; address?: string;
-  coach?: { first_name?: string; last_initial?: string; email?: string }; team?: { name?: string; city?: string };
+  coach?: { first_name?: string; last_initial?: string; email?: string }; team?: { name?: string; city?: string; state?: string; website?: string };
 };
 
 async function handle(body: Body, ip: string) {
@@ -207,13 +208,16 @@ async function handle(body: Body, ip: string) {
       if (!NAME.test(String(coach.first_name ?? '').trim()) || !INITIAL.test(String(coach.last_initial ?? ''))) throw new KeyLoginError('Give your first name and last initial.', 400);
       if (coach.email && !EMAIL.test(String(coach.email))) throw new KeyLoginError('That email does not look right.', 400);
       if (!TEAM.test(String(team.name ?? '').trim()) || !CITY.test(String(team.city ?? ''))) throw new KeyLoginError('Give the team name and city.', 400);
+      if (!US_STATES.includes(String(team.state))) throw new KeyLoginError('Pick your team\'s state.', 400);
+      const website = String(team.website ?? '').trim();
+      if (website && !validWebsite(website)) throw new KeyLoginError('The school website must be a full https:// link, or leave it empty.', 400);
       const pin = pinFields(body.verifier);
       const { pub, iat } = core.check(body.challenge, body.sig, body.pubkey);
       const address = keyAddress(body.address, pub);
       const { data, error } = await db.rpc('apply_team', {
         p_pubkey: pub, p_login_at: new Date(iat).toISOString(), p_verifier_hash: pin.hash, p_pepper: pin.pepper,
         p_first_name: String(coach.first_name).trim(), p_last_initial: String(coach.last_initial), p_email: String(coach.email ?? ''),
-        p_team: String(team.name).trim(), p_city: String(team.city ?? ''),
+        p_team: String(team.name).trim(), p_city: String(team.city ?? ''), p_state: String(team.state), p_website: website || null,
       });
       if (error) throw sqlError(error);
       const { person_id: personId, org_id: orgId } = data[0];

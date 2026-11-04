@@ -1,11 +1,16 @@
-// Coach desk, "Your team": apply for a team, wait for the owner to verify it, then keep the
-// roster (the team ledger), make one-time invites and print the QR sheet for practice.
+// Coach desk, "Your team": apply for a team (with its state and an optional school website), wait
+// for the owner to verify it, then keep the roster (the team ledger), make one-time invites and
+// print the QR sheet for practice. Below the roster: the team pool and session payouts, then the
+// coach's own Wallet and profile (same account as anywhere else).
 // The device-only roster and the #t= / #r= links below it stay as the offline fallback.
 import qrcode from 'qrcode-generator';
 import { supabase } from './supabase.js';
 import { status } from './keyring.js';
-import { applyAsCoach, rpc, logOut } from './auth.js';
-import { $, esc, say, busy, keyMaker, ensureSignedIn, ROLE, positionLabel } from './ui.js';
+import { applyAsCoach, rpc, logOut, redeemStatus } from './auth.js';
+import { $, esc, say, busy, keyMaker, ensureSignedIn, ROLE, positionLabel, presetPickers, socialsFields, readSocials } from './ui.js';
+import { US_STATES, validWebsite } from '../supabase/functions/_shared/states.js';
+import { mountWallet } from './wallet.js';
+import { coachPayouts } from './payouts.js';
 import { TRIAL, rememberInvite } from './trial.js';
 import { mountPortal, signInChoice } from './portal.js';
 import { POSITIONS } from '../field/positions.js';
@@ -25,12 +30,47 @@ async function boot() {
   const team = home?.teams.find(t => t.role === 'coach' || t.role === 'admin');
   if (!team) return signInChoice(root, 'The key signed in here belongs to a player, not a coach. Coaches sign in here; players use the player portal.');
   if (!team.verified) return paintPending(team);
-  paintRoster(team);
+  await paintRoster(team);
+  paintPool(team);
+  paintMine(home);
+}
+
+/* ---------- team pool and session payouts ---------- */
+async function paintPool(team) {
+  const el = $('pool-panel');
+  if (!el) return;
+  el.hidden = false;
+  try { await coachPayouts(el, team, { onChange: () => paintPool(team) }); }
+  catch (e) { el.innerHTML = `<h2><i>$</i> TEAM POOL &amp; SESSION PAYOUTS</h2><p class="hint">${esc(/function|schema cache/i.test(e.message) ? 'The team pool and session payouts open once this site\'s database has the Phase 2 update.' : e.message)}</p>`; }
+}
+
+/* ---------- the coach's own wallet and profile ---------- */
+async function paintMine(home) {
+  const el = $('wallet-panel');
+  if (!el) return;
+  el.hidden = false;
+  const p = home.person;
+  el.innerHTML = `<div id="me-wallet"></div>
+    <details class="edit"><summary>Edit my profile</summary>
+      ${presetPickers({ avatar: p.avatar, skin: p.skin, xp: p.xp })}
+      ${socialsFields(p)}
+      <div class="row"><button class="btn alt" type="button" id="me-save">SAVE</button></div>
+      <p class="msg" id="me-msg" role="status" hidden></p>
+    </details>`;
+  $('me-save').addEventListener('click', e => busy(e.currentTarget, $('me-msg'), async () => {
+    const patch = { avatar: el.querySelector('input[name="avatar"]:checked').value, skin: el.querySelector('input[name="skin"]:checked').value,
+      socials: readSocials(el), socials_public_self: $('so-public').checked };
+    const { error } = await supabase.from('people').update(patch).eq('id', p.id);
+    if (error) throw new Error(/socials/.test(error.message) ? 'Links must be full profile links on Instagram, TikTok, YouTube, X or Hudl.' : error.message);
+    say($('me-msg'), 'Saved.', 'ok');
+  }));
+  const [key, redeem] = await Promise.all([status(), redeemStatus().catch(() => ({ configured: false }))]);
+  await mountWallet($('me-wallet'), { home, key, redeem, onChange: async () => paintMine(await rpc('team_home')) });
 }
 
 /* ---------- apply ---------- */
 function paintApply() {
-  const t = TRIAL ? { first: 'Casey', last: 'R', email: 'coach.trial@example.com', team: `Trial Team ${new Date().toISOString().slice(5, 16).replace('T', ' ')}`, city: 'College Park' } : {};
+  const t = TRIAL ? { first: 'Casey', last: 'R', email: 'coach.trial@example.com', team: `Trial Team ${new Date().toISOString().slice(5, 16).replace('T', ' ')}`, city: 'College Park', state: 'Maryland', website: 'https://umterps.com' } : {};
   root.innerHTML = `<p class="hint">Coaches apply once. LacrosseTube checks every team before it can add players. Players never sign up on their own: they join from your roster.</p>
     <div class="grid2">
       <label class="field" for="ap-first">Your first name<input id="ap-first" maxlength="24" autocomplete="given-name" value="${esc(t.first || '')}"></label>
@@ -38,21 +78,28 @@ function paintApply() {
       <label class="field" for="ap-email">Email (so we can reach you)<input id="ap-email" type="email" maxlength="120" autocomplete="email" value="${esc(t.email || '')}"></label>
       <label class="field" for="ap-team">Team name<input id="ap-team" maxlength="80" placeholder="State Club Lacrosse" value="${esc(t.team || '')}"></label>
       <label class="field" for="ap-city">City<input id="ap-city" maxlength="60" value="${esc(t.city || '')}"></label>
+      <label class="field" for="ap-state">Team state<select id="ap-state"><option value="">Pick a state</option>${US_STATES.map(x => `<option${x === t.state ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+      <label class="field" for="ap-web">School website (optional)<input id="ap-web" type="url" inputmode="url" maxlength="200" autocomplete="url" placeholder="https://athletics.example.edu" value="${esc(t.website || '')}"></label>
     </div>
     <p class="hint">Applying makes your key on this device. It is your login. No password.</p>
     <div id="ap-key"></div>`;
   keyMaker($('ap-key'), {
     label: 'APPLY',
     make: async opts => {
+      const state = $('ap-state').value, website = $('ap-web').value.trim();
+      if (!US_STATES.includes(state)) throw new Error('Pick your team\'s state.');
+      if (website && !validWebsite(website)) throw new Error('The school website must be a full https:// link, or leave it empty.');
       await applyAsCoach(opts, { first_name: $('ap-first').value.trim(), last_initial: $('ap-last').value.trim(), email: $('ap-email').value.trim() },
-        { name: $('ap-team').value.trim(), city: $('ap-city').value.trim() });
+        { name: $('ap-team').value.trim(), city: $('ap-city').value.trim(), state, website: website || undefined });
       boot();
     },
   });
 }
 
+const place = team => [team.city, team.state].filter(Boolean).map(esc).join(', ');
+const site = team => (team.website ? ` · <a href="${esc(team.website)}" target="_blank" rel="noopener noreferrer">school site</a>` : '');
 function paintPending(team) {
-  root.innerHTML = `<p><b>${esc(team.name)}</b>${team.city ? ` · ${esc(team.city)}` : ''}</p>
+  root.innerHTML = `<p><b>${esc(team.name)}</b>${place(team) ? ` · ${place(team)}` : ''}${site(team)}</p>
     <p class="hint">Your application is in. Once LacrosseTube approves it, you can add players here.</p>
     ${TRIAL ? '<p><a class="btn" href="/owner">APPROVE IT ON THE OWNER PAGE</a></p>' : ''}
     <div class="row"><button class="btn alt" type="button" id="pd-check">CHECK AGAIN</button><button class="ghost" type="button" id="pd-out">Sign out</button></div>`;
@@ -65,7 +112,7 @@ async function paintRoster(team) {
   const rows = await rpc('roster_for_coach', { p_org: team.org_id });
   const live = r => r.active_keys > 0;
   const state = r => live(r) ? 'Joined' : r.invite_expires_at ? `Invite until ${day(r.invite_expires_at)}` : 'No invite';
-  root.innerHTML = `<p><b>${esc(team.name)}</b>${team.city ? ` · ${esc(team.city)}` : ''} <span class="badge ok">VERIFIED</span></p>
+  root.innerHTML = `<p><b>${esc(team.name)}</b>${place(team) ? ` · ${place(team)}` : ''}${site(team)} <span class="badge ok">VERIFIED</span></p>
     <div class="tablewrap"><table class="roster team-roster"><thead><tr><th>Name</th><th>#</th><th>Position</th><th>Role</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead><tbody>
     ${rows.map(r => `<tr data-person="${r.person_id}"><td>${esc(r.display_name)}</td><td>${esc(r.number || '')}</td><td>${esc(positionLabel(r.position))}</td>
       <td>${ROLE[r.role] || r.role}</td><td>${esc(state(r))}${r.placed ? ' · placed' : ''}</td>

@@ -59,6 +59,35 @@ This version is for college players, 18+. A coach applies on `/coach` ("Your tea
 
 **Checks.** `node scripts/check-phase1.mjs`, `node scripts/check-warrior.mjs` and `node scripts/check-redeem.mjs` run the flows through the API against the local stack (the redeem check serves the functions with `supabase/.env.redeem-test`, an unfunded throwaway treasury). `tests/e2e/trial.mjs` runs the trial in one real browser (Playwright) against `npx vite` on localhost. They use a throwaway local owner key (`output/phase1/test-owner-key.json`, `supabase/.env.owner-test`), never the real one.
 
+## Web3 Phase 2: wallet, daily earnings, forum, team pool and session payouts
+
+Everything in Phase 2 is **site balance**: points in the database. Nothing moves on the chain in Phase 2 (Phase 3 below switches the chain on for some transfers).
+
+**Wallet.** The player page (`/team`) and the coach desk (`/coach`) both have a Wallet section for the same account: the site balance (points, not on chain), the DogeOS address made from the device key, today's automatic earnings against their caps, sending points to a teammate, giving to a team pool, redeem (the existing button) and the key file. Profile edits stay on the same page, under it.
+
+**Automatic daily earnings, and only these,** stop at 25,000 points (25 DOGE) a day, counted in the America/New_York day:
+- 500 points per minute the film clock is actually advancing, at most 30 minutes (15 DOGE). On the film site, `js/tube.js` reports the YouTube player's time; `core/film-count.js` counts only seconds in which that time moved forward at about wall-clock speed in a visible tab (paused, buffering, skipped, rewound or a background tab count nothing: an idle tab pays nothing), and `core/film-earn.js` sends them in 30-second beats. `public.watch_beat` never credits more than the real time since the person's last beat.
+- 1,000 points for the first finish of a given What Coach Said game (one frame, by its idea id), at most 7 games a day (7 DOGE). A game finished after the seventh is not used up; it pays when finished another day.
+- 30 x 500 + 7 x 1,000 = 22,000. The ceiling is room, not a third payout. Warrior Tests, tips, services, donations and session payouts never count toward it.
+
+The numbers live in `POINTS` in `supabase/functions/_shared/chain.js` and in `public.earn_rules()`; `tests/phase2-db.test.mjs` checks that they agree.
+
+**Forum (`/forum`).** Any signed-in member posts text, a photo or a clip they upload (a private Storage bucket, `forum`, readable by signed-in members; each member writes only into their own folder). A YouTube link is refused: YouTube films are the library, there is no tip button on a film card, and channel owners are not members. A tip moves site balance to the post's author. A post can be a service with a price, optionally a stick-doctor pattern from `data/stick-patterns.js`; paying it moves points to the seller and stores the receipt (`point_transfers`, kind `service`, with the title and pattern as they were when paid).
+
+**Ledger.** Every point that moves between people or into and out of a team pool is a row in `point_transfers` (send, tip, service, donation, payout). Balance = Warrior tiers + automatic earnings + points received − points sent or held − points redeemed.
+
+**Team pool and session payouts.** A team's pool is separate from the coach's own wallet. Anyone signed in can give to any approved team (the coach desk shows a link, `/team?donate=<team id>`). On the coach desk the coach attaches one What Coach Said session link (a team link, `/play#t=…`, made under "Make a team link") and picks only the condition; the amount is set by the rules, never typed:
+- A. Opened the session (100 points), recorded when a signed-in player opens the link on `/play`.
+- B. Finished the What Coach Said game for that session (500), recorded when every frame of that session is played.
+- C. Watched the assigned film for the minutes the coach set, 1 to 30 (100 points a minute), from the film-site seconds of that film.
+- D. The coach marks the player present (500).
+
+The player sees each payout on their team page with what it needs, and a CONFIRM button once the condition is true. The points leave the pool only then, into the player's site balance. Redeem is still a separate step.
+
+**Coach application.** The coach picks the team's state (one of 25) and may give the school website (`https://` only). Both are stored on the team and shown to the owner; there are no state or country boards in Phase 2.
+
+**Checks.** `tests/phase2-db.test.mjs` runs as part of `npm test` against a throwaway local Postgres with every migration applied (`tests/db/pg.mjs`; it starts one with `initdb` and stand-ins for the Supabase auth and storage schemas, and skips when no Postgres server binaries are installed). `tests/phase2-ui.test.mjs` checks the film counter and that tips exist only on forum posts. `node scripts/check-phase2.mjs` runs the same flows through the real API against the local Supabase stack, like the Phase 1, Warrior and redeem checks.
+
 ## Film notes and team sharing
 
 Open a film to see the clock and **Mark this moment**. Add a short note, optional skill tag, and optional by name. The clock accepts time messages only from the current YouTube privacy-enhanced embed. It never estimates elapsed time while buffering. If the player cannot report time, use **Set timestamp manually**.

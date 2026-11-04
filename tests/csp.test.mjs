@@ -29,7 +29,9 @@ test('connect-src allows this site, fonts, and at most one Supabase project', ()
 
 test('the rest of the policy is unchanged from production', () => {
   assert.deepEqual(dir['frame-src'], ['https://www.youtube-nocookie.com']);
-  assert.deepEqual(dir['img-src'], ["'self'", 'https://i.ytimg.com', 'https://archive.org', 'data:']);
+  // blob: shows forum photos, which are read with the member's session from a private bucket.
+  assert.deepEqual(dir['img-src'], ["'self'", 'https://i.ytimg.com', 'https://archive.org', 'data:', 'blob:']);
+  assert.deepEqual(dir['media-src'], ["'self'", 'blob:']);
   assert.deepEqual(dir['frame-ancestors'], ["'none'"]);
   assert.deepEqual(dir['base-uri'], ["'self'"]);
   assert.deepEqual(dir['form-action'], ["'self'"]);

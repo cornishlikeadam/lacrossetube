@@ -4,7 +4,7 @@
 import { TRIAL, PEOPLE, useSlot, trialInvites, rememberInvite } from './trial.js';
 import { statusOf, wipeSlot } from './keyring.js';
 import { clientFor, sessionKey, SUPABASE_URL } from './supabase.js';
-import { CHAIN } from '../supabase/functions/_shared/chain.js';
+import { CHAIN, POINTS } from '../supabase/functions/_shared/chain.js';
 import { $, esc, busy } from './ui.js';
 
 const root = $('trial');
@@ -14,6 +14,7 @@ const PLAYERS = [
   { first: 'Jamie', last: 'C', number: '21', position: 'defense' },
 ];
 const short = a => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '');
+const FILM = 'yt-bw8KCj1uzNA';
 const go = (slotId, url) => { useSlot(slotId); location.assign(url); };
 
 async function slotState(id) {
@@ -40,6 +41,7 @@ async function start() {
   const freeSlots = states.slice(1).filter(s => !s.key).map(s => s.id);
   const roster = team?.verified ? await coachRpc('roster_for_coach', { p_org: team.org_id }).catch(() => []) : [];
   const players = roster.filter(r => r.role === 'player');
+  const joined = Object.fromEntries(states.map(st => [st.id, Boolean(st.home)]));
 
   root.innerHTML = `<p class="kicker">PREVIEW TRIAL · ${esc(new URL(SUPABASE_URL).host.split('.')[0])}</p>
     <h1>Try the whole flow here</h1>
@@ -73,6 +75,22 @@ async function start() {
       <li><h2>Reissue a lost key</h2>
         <p>Wipes that player's slot (a lost phone), turns off their key, makes a new invite and opens it. Same person, points and rating; a new DogeOS address.</p>${coachOut ? coachNote : ''}
         <div class="row">${invites.filter(i => i.used).map(i => `<button class="ghost" type="button"${team ? '' : ' disabled'} data-lose="${esc(i.person)}" data-slot="${i.by}" data-name="${esc(i.name)}">Lose ${esc(PEOPLE.find(p => p.id === i.by)?.label)}'s phone</button>`).join('') || '<span class="hint">After a player joins.</span>'}</div></li>
+      <li><h2>Earn: one film minute and one game</h2>
+        <p>Signed in, a film pays ${POINTS.earn.perMinute} points for each minute it actually plays (up to ${POINTS.earn.maxMinutes} a day) and the first finish of a What Coach Said game pays ${POINTS.earn.perGame.toLocaleString()} (up to ${POINTS.earn.maxGames} a day). Keep the film playing and the tab in front for a full minute.</p>
+        <div class="row"><button class="btn" type="button" data-go="p1:/?watch=${FILM}"${joined.p1 ? '' : ' disabled'}>WATCH A FILM AS PLAYER 1</button>
+          <button class="btn alt" type="button" data-go="p1:/play"${joined.p1 ? '' : ' disabled'}>PLAY A GAME AS PLAYER 1</button></div></li>
+      <li><h2>Forum: post, then tip from another player</h2>
+        <p>Player 1 posts. Player 2 tips the post from site balance. Film cards from YouTube have no tip: they are the library.</p>
+        <div class="row"><button class="btn" type="button" data-go="p1:/forum"${joined.p1 ? '' : ' disabled'}>FORUM AS PLAYER 1</button>
+          <button class="btn alt" type="button" data-go="p2:/forum"${joined.p2 ? '' : ' disabled'}>FORUM AS PLAYER 2</button></div></li>
+      <li><h2>Team pool and a session payout</h2>
+        <p>Player 2 gives points to the team pool. The coach makes a team link (sample meeting), attaches it, and picks A, B, C or D. The player does it and confirms on their team page.</p>
+        <div class="row"><button class="btn" type="button" data-go="p2:/team?donate=${team?.org_id || ''}"${joined.p2 && team?.verified ? '' : ' disabled'}>GIVE TO THE POOL AS PLAYER 2</button>
+          <button class="btn alt" type="button" data-go="coach:/coach">COACH DESK</button>
+          <button class="ghost" type="button" data-go="p1:/team"${joined.p1 ? '' : ' disabled'}>Player 1 team page</button></div></li>
+      <li><h2>Redeem</h2>
+        <p>On a player's wallet, redeem turns points into testnet DOGE at their address, with a receipt and an explorer link. Until the chain is switched on for this project it says "not configured".</p>
+        <div class="row"><button class="ghost" type="button" data-go="p1:/team#wallet"${joined.p1 ? '' : ' disabled'}>Player 1 wallet</button></div></li>
     </ol>
     <p class="msg" id="tr-msg" role="status" hidden></p>
     <p class="hint">Chain: ${esc(CHAIN.name)} (${CHAIN.id}). <button class="linkish" type="button" id="tr-reset">Start the trial over on this browser</button></p>`;

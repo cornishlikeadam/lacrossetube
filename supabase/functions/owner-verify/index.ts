@@ -40,9 +40,9 @@ Deno.serve(async req => {
     const { data: cards, error } = await db.from('board_cards').select('ref_id, title, col, created_at').eq('kind', 'org_application').neq('col', 'done').order('created_at');
     if (error) return reply({ error: error.message }, 500);
     const ids = cards.map(c => c.ref_id);
-    const { data: orgs } = ids.length ? await db.from('orgs').select('id, name, city, created_by, people!orgs_created_by_fkey(display_name, contact_email)').in('id', ids) : { data: [] };
+    const { data: orgs } = ids.length ? await db.from('orgs').select('id, name, city, state, website, created_by, people!orgs_created_by_fkey(display_name, contact_email)').in('id', ids) : { data: [] };
     const byId = new Map((orgs ?? []).map(o => [o.id, o]));
-    return reply({ applications: cards.map(c => { const o = byId.get(c.ref_id); return { org_id: c.ref_id, team: o?.name, city: o?.city, coach: o?.people?.display_name, email: o?.people?.contact_email, applied: c.created_at }; }) });
+    return reply({ applications: cards.map(c => { const o = byId.get(c.ref_id); return { org_id: c.ref_id, team: o?.name, city: o?.city, state: o?.state, website: o?.website, coach: o?.people?.display_name, email: o?.people?.contact_email, applied: c.created_at }; }) });
   }
   const { data: name, error } = await db.rpc('verify_org', { p_org: payload.org_id, p_sig: body.sig });
   if (error) return reply({ error: error.code === 'P0002' ? error.message : 'Could not verify the team.' }, error.code === 'P0002' ? 404 : 500);

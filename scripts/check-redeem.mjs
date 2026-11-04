@@ -28,7 +28,7 @@ async function signed(d, extra) {
 }
 const client = async session => { const c = createClient(url, key, { auth: { persistSession: false } }); await c.auth.setSession(session); return c; };
 
-const coachRes = await fn('key-login', { step: 'apply', ...(await signed(device(), { coach: { first_name: 'Redeem', last_initial: 'T' }, team: { name: `Redeem Test ${Date.now().toString(36)}`, city: 'Lab' } })) });
+const coachRes = await fn('key-login', { step: 'apply', ...(await signed(device(), { coach: { first_name: 'Redeem', last_initial: 'T' }, team: { name: `Redeem Test ${Date.now().toString(36)}`, city: 'Lab', state: 'New York' } })) });
 assert.equal(coachRes.status, 200, JSON.stringify(coachRes.body));
 const coach = await client(coachRes.body.session);
 assert.equal((await fn('owner-verify', signOwnerRequest(ownerSk, 'verify_org', { org_id: coachRes.body.orgId }))).status, 200);

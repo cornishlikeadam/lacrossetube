@@ -40,7 +40,7 @@ const placement = grades => ['help', 'talk', 'slide', 'angle', 'hustle'].map((co
 
 // 1. A coach applies; the application lands on the owner's board.
 const coachDev = device();
-const applied = await fn('key-login', { step: 'apply', ...(await signed(coachDev, { coach: { first_name: 'Casey', last_initial: 'R', email: 'coach@example.com' }, team: { name: 'Fake Riverside U14', city: 'Testville' } })) });
+const applied = await fn('key-login', { step: 'apply', ...(await signed(coachDev, { coach: { first_name: 'Casey', last_initial: 'R', email: 'coach@example.com' }, team: { name: 'Fake Riverside U14', city: 'Testville', state: 'Maryland', website: 'https://www.example.edu' } })) });
 const coach = await session(applied);
 const org = applied.body.orgId;
 const { data: card } = await admin.from('board_cards').select('col, title').eq('ref_id', org).single();
@@ -125,7 +125,7 @@ await assert.rejects(rpc(S.c, 'guardian_set', { p_child: S.id, p_public_socials:
 ok('only a consenting parent can flip the second switch for 13-17 public socials');
 
 // 9. Visibility: another team, and anonymous visitors, cannot see the U13 player.
-const otherCoach = await session(await fn('key-login', { step: 'apply', ...(await signed(device(), { coach: { first_name: 'Other', last_initial: 'C' }, team: { name: 'Fake Other Team', city: 'Elsewhere' } })) }));
+const otherCoach = await session(await fn('key-login', { step: 'apply', ...(await signed(device(), { coach: { first_name: 'Other', last_initial: 'C' }, team: { name: 'Fake Other Team', city: 'Elsewhere', state: 'Ohio' } })) }));
 assert.equal((await otherCoach.from('people').select('id').eq('id', J.id)).data.length, 0);
 const anon = createClient(url, pubKey, { auth: { persistSession: false } });
 assert.ok((await anon.from('people').select('id').eq('id', J.id)).error);
